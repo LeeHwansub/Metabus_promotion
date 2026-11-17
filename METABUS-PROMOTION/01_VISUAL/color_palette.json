@@ -1,0 +1,61 @@
+{
+  "version": "0.3",
+  "primary": [
+    {
+      "name": "Night Navy",
+      "hex": "#0C0C6C",
+      "usage": "밤하늘 배경, 가장 어두운 브랜드 톤"
+    },
+    {
+      "name": "Royal Indigo",
+      "hex": "#181890",
+      "usage": "버스 차체 메인 컬러"
+    },
+    {
+      "name": "Mascot Purple",
+      "hex": "#6030A8",
+      "usage": "마스코트 제복·모자"
+    }
+  ],
+  "secondary": [
+    {
+      "name": "Periwinkle",
+      "hex": "#6060E4",
+      "usage": "버스 측면 하이라이트"
+    },
+    {
+      "name": "Lavender Cloud",
+      "hex": "#906CFC",
+      "usage": "구름, 판타지 공간 빛"
+    },
+    {
+      "name": "Soft Lavender",
+      "hex": "#A8A8FC",
+      "usage": "밝은 배경"
+    }
+  ],
+  "accent": [
+    {
+      "name": "Ticket Yellow",
+      "hex": "#FCC024",
+      "usage": "로고 티켓 아이콘, 마스코트 스카프·모자 M, 버스 라인"
+    }
+  ],
+  "background": [
+    {
+      "name": "Night Navy",
+      "hex": "#0C0C6C",
+      "usage": "엔딩 로고 배경 후보"
+    }
+  ],
+  "notes": "HEX는 참고 이미지 영역별 최빈색을 12단계 양자화해 추출한 근사치. 공식 브랜드 컬러 확보 시 교체. 현실 장면(S01~S02)은 저채도 쿨톤, 가상 세계로 갈수록 이 브랜드 팔레트로 수렴.",
+  "mood_transition": {
+    "reality": "차갑고 무거운 저채도, 어두운 톤 (SCENE 01)",
+    "transition": "스마트폰에서 퍼지는 은은하고 따뜻한 빛 (SCENE 02–04)",
+    "virtual_world": "따뜻한 자연광, 풍부하고 생동감 있는 색 (SCENE 05)"
+  },
+  "source": [
+    "01_VISUAL/brand/metabus.png",
+    "01_VISUAL/brand/metabus2.png"
+  ]
+}

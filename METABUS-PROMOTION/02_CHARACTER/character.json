@@ -1,0 +1,145 @@
+{
+  "version": "0.5",
+  "status": "draft",
+  "transformation_rule": "변신 과정은 보여주지 않는다. 버스에 타면 이미 변해 있고, 1인칭으로 '내 손'을 내려다보며 깨닫는다. 체험(세계)이 바뀔 때마다 모습도 바뀐다. 얼굴 핵심 특징(눈매 등)은 유지.",
+  "characters": [
+    {
+      "id": "CHAR_01",
+      "name": "김서윤",
+      "persona": "PERSONA A",
+      "role": "학업에 지친 고등학생",
+      "age": 18,
+      "gender": "female",
+      "occupation": "고등학교 2학년",
+      "real": {
+        "appearance": "어깨 길이 검은 생머리, 마른 체형, 피곤한 눈 (초안)",
+        "outfit": "교복 셔츠 또는 실내복 (확정 필요)",
+        "location": "늦은 밤, 자기 방 책상",
+        "consistency_tags": [
+          "18-year-old Korean high school girl",
+          "shoulder-length straight black hair",
+          "slim",
+          "tired eyes"
+        ]
+      },
+      "avatar": {
+        "render_style": "스타일라이즈 3D (픽사풍)",
+        "reveal": "1인칭 POV로 손을 내려다보며 변신을 깨달음",
+        "link_features": [
+          "눈매·얼굴형 유지"
+        ],
+        "forms": [
+          {
+            "id": "skier",
+            "experience": "스키장",
+            "shots": [
+              "S04_C02",
+              "S05_C01"
+            ],
+            "description": "스키어 — 밝은 색 스키복, 고글, 장갑, 폴"
+          },
+          {
+            "id": "cheerleader_fan",
+            "experience": "야구장",
+            "shots": [
+              "S05_C03"
+            ],
+            "description": "응원단 관중 — 응원 유니폼, 응원봉"
+          }
+        ]
+      },
+      "reference_images": []
+    },
+    {
+      "id": "CHAR_02",
+      "name": "이준호",
+      "persona": "PERSONA B",
+      "role": "업무에 지친 직장인",
+      "age": 29,
+      "gender": "male",
+      "occupation": "회사원",
+      "real": {
+        "appearance": "짧고 살짝 흐트러진 검은 머리, 보통 체형, 다크서클 (초안)",
+        "outfit": "다크 네이비 정장, 풀린 넥타이, 어깨에 멘 가방 (초안)",
+        "location": "늦은 저녁, 퇴근길 버스 정류장",
+        "consistency_tags": [
+          "29-year-old Korean office worker man",
+          "short slightly messy black hair",
+          "dark navy suit",
+          "loosened tie",
+          "shoulder bag",
+          "dark circles"
+        ]
+      },
+      "avatar": {
+        "render_style": "스타일라이즈 3D (픽사풍)",
+        "reveal": "1인칭 POV로 손을 내려다보며 변신을 깨달음",
+        "link_features": [
+          "눈매·얼굴형 유지"
+        ],
+        "forms": [
+          {
+            "id": "monk",
+            "experience": "산사",
+            "shots": [
+              "S04_C02"
+            ],
+            "description": "스님 — 회색 승복, 삭발, 염주"
+          },
+          {
+            "id": "racer",
+            "experience": "카레이싱",
+            "shots": [
+              "S05_C02"
+            ],
+            "description": "레이서 — 레이싱 슈트, 헬멧"
+          },
+          {
+            "id": "cheerleader_fan",
+            "experience": "야구장",
+            "shots": [
+              "S05_C03"
+            ],
+            "description": "응원단 관중 — 응원 유니폼, 응원봉"
+          }
+        ]
+      },
+      "reference_images": []
+    },
+    {
+      "id": "MASCOT_01",
+      "name": "마스코트 (공식 이름 없음)",
+      "role": "METABUS 마스코트 / 안내자(차장)",
+      "species": "고양이 계열로 보임 (공식 설정 없음)",
+      "appearance": "크림색 몸, 눈 주변 갈색 무늬, 큰 갈색 눈, 수염, 줄무늬 긴 꼬리",
+      "outfit": "보라색 차장 모자(노란 M 엠블럼, 노란 띠), 보라색 더블 버튼 제복(노란 단추), 노란 스카프",
+      "props": [
+        "노란 별 모양 지팡이(M 로고)"
+      ],
+      "signature_pose": [
+        "경례",
+        "손을 이마에 대고 먼 곳 바라보기"
+      ],
+      "render_style": "스타일라이즈 3D (2D 일러스트 원본을 3D로 재해석)",
+      "appears_in": [
+        "S03_C02",
+        "S05_C03",
+        "S06_C01"
+      ],
+      "consistency_tags": [
+        "cute cream-colored cat-like mascot",
+        "brown patches around eyes",
+        "big brown eyes",
+        "purple conductor cap with yellow M emblem",
+        "purple double-breasted uniform with yellow buttons",
+        "yellow scarf",
+        "yellow star wand"
+      ],
+      "reference_images": [
+        "01_VISUAL/brand/metabus.png",
+        "01_VISUAL/brand/metabus2.png"
+      ]
+    }
+  ],
+  "style_rule": "현실 장면은 실사 3D, 변신 후·가상 세계는 스타일라이즈 3D(픽사풍). 마스코트는 처음부터 스타일라이즈 3D."
+}
