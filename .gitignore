@@ -11,3 +11,17 @@ _box
 #trail
 
 .trail
+
+assets
+
+# 무거운 미디어·바이너리 — 로컬에만 보관 (스크립트로 다시 만들 수 있거나 원본 자료)
+*.mp4
+*.mov
+*.blend
+*.blend1
+*.png
+*.jpg
+*.jpeg
+*.webp
+*.psd
+*.zip
