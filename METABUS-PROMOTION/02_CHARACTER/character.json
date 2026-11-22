@@ -33,7 +33,7 @@
             "id": "skier",
             "experience": "스키장",
             "shots": [
-              "S04_C02",
+              "S04_C01",
               "S05_C01"
             ],
             "description": "스키어 — 밝은 색 스키복, 고글, 장갑, 폴"
@@ -82,7 +82,7 @@
             "id": "monk",
             "experience": "산사",
             "shots": [
-              "S04_C02"
+              "S04_C01"
             ],
             "description": "스님 — 회색 승복, 삭발, 염주"
           },
@@ -123,8 +123,7 @@
       "render_style": "스타일라이즈 3D (2D 일러스트 원본을 3D로 재해석)",
       "appears_in": [
         "S03_C02",
-        "S05_C03",
-        "S06_C01"
+        "S05_C03"
       ],
       "consistency_tags": [
         "cute cream-colored cat-like mascot",

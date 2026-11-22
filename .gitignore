@@ -25,3 +25,7 @@ assets
 *.webp
 *.psd
 *.zip
+*.wav
+*.mp3
+*.m4a
+*.aac

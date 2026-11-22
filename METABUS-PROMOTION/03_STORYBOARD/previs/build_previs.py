@@ -243,6 +243,8 @@ def set_room(ox):
     person("seoyun_real", (ox, 0.55, 0), "#F2F2F2", "#2A3550", seated=True, facing=1)  # 책상(+Y)을 봄
     add("cube", "chair", (ox, 0.45, 0.45), (0.25, 0.25, 0.03), material=mat("chair", "#222222"))
     fill = light("room_fill_cool", "AREA", (ox + 1.5, -1.5, 2.5), "#6F8FB8", 40, rot=(50, 0, 30), size=3)
+    key = light("room_key_face", "AREA", (ox + 0.8, 2.2, 1.9), "#FFD7A8", 30, size=1.2)  # S01_C01 얼굴 키 라이트 (스탠드 반사광)
+    look_at(key, (ox, 0.55, 1.3))
     return dict(phone=phone, fill=fill, face=(ox, 0.55, 1.3))
 
 
@@ -376,8 +378,8 @@ def set_ski(ox):
         add("cyl", f"ski_flag_{i}", (ox + (3 if i % 2 else -3), y, slope_z(y) + 0.6), (0.04, 0.04, 0.6), material=mat("flag", "#FCC024", 2))
     light("ski_sun", "SUN", (ox, 0, 20), "#FFF2D6", 5, rot=(45, 0, 20))
     skier = person("seoyun_skier", (ox, -10, 7.76), "#E03C3C", "#2A2A2A", height=1.6)
-    loc_key(skier, f(19), (ox, -10, 7.76))
-    loc_key(skier, f(21), (ox - 2, 25, slope_z(25)))
+    loc_key(skier, f(17), (ox, -10, 7.76))          # S05_C01 17–19.5초
+    loc_key(skier, f(19.5), (ox - 2, 25, slope_z(25)))
     linear(skier)
     pov = (ox + 4, -13, 9.4)
     pov_hands("ski", pov, "#E03C3C", "poles")
@@ -396,8 +398,8 @@ def set_race(ox):
     car = empty("race_car", (ox - 60, 0, 0))
     add("cube", "race_car_body", (ox - 60, 0, 0.5), (2.2, 0.9, 0.35), material=mat("race_car", "#6030A8", rough=0.2), parent=car)
     add("sphere", "race_car_helmet", (ox - 60.3, 0, 1.0), (0.22, 0.22, 0.22), material=mat("helmet", "#FCC024"), parent=car)
-    loc_key(car, f(21), (ox - 60, 0, 0))
-    loc_key(car, f(23), (ox + 60, 0, 0))
+    loc_key(car, f(19.5), (ox - 60, 0, 0))          # S05_C02 19.5–22초 (등속)
+    loc_key(car, f(22), (ox + 60, 0, 0))
     linear(car)
     light("race_sun", "SUN", (ox, 0, 20), "#FFB070", 4, rot=(70, 0, -60))
 
@@ -490,9 +492,10 @@ def setup_world():
     bg = w.node_tree.nodes["Background"]
     keys = [  # (sec, color, strength): 현실 쿨톤 → 초대 → 가상 세계 웜톤 → 엔딩
         (0, "#1A2230", 0.4), (7, "#1A2230", 0.4), (10, "#1E1A3A", 0.5), (12, "#0C0C6C", 0.8),
-        (14, "#0C0C6C", 0.8), (16, "#FFD8A8", 1.2), (19, "#BFDFFF", 1.5), (21, "#FFB070", 1.2),
-        (23, "#0C0C6C", 0.6), (25.0, "#0C0C6C", 0.6), (25.1, "#FF9A60", 0.8), (27, "#3A1A40", 0.3),
-        (27.05, "#0C0C6C", 0.3), (30, "#05052A", 0.1),
+        (14, "#0C0C6C", 0.8), (14.05, "#FFD8A8", 1.2), (15.5, "#FFD8A8", 1.2),     # 산사 (새벽 웜톤)
+        (15.55, "#BFDFFF", 1.5), (19.5, "#BFDFFF", 1.5),                           # 스키장
+        (19.55, "#FFB070", 1.2), (22, "#FFB070", 1.2),                             # 레이싱 (노을)
+        (22.05, "#0C0C6C", 0.6), (25, "#0C0C6C", 0.6),                             # 야구장 (야간)
     ]
     for sec, c, s in keys:
         bg.inputs["Color"].default_value = hex_rgba(c)
@@ -506,25 +509,28 @@ def build():
     bpy.ops.wm.read_factory_settings(use_empty=True)
     sc = bpy.context.scene
     sc.render.fps = FPS
-    sc.frame_start, sc.frame_end = 1, 30 * FPS
+    # 0–25초만 Blender. 25–30초 엔딩은 05_PRODUCTION/motion_graphics/ending_html (HTML 모션그래픽)
+    sc.frame_start, sc.frame_end = 1, 25 * FPS
     font = bpy.data.fonts.load(FONT_KR)
 
     shots = json.load(open(STORYBOARD, encoding="utf-8"))["shots"]
-    assert len(shots) == 15, "storyboard.json 컷 수가 바뀌었습니다. 스크립트의 컷 정의를 확인하세요."
+    assert len(shots) == 14, "storyboard.json 컷 수가 바뀌었습니다. 스크립트의 컷 정의를 확인하세요."
     assert abs(sum(s["duration_sec"] for s in shots) - 30) < 1e-6
 
-    RX, SX, PCX, MX, IX, TX, KX, RCX, STX, EX = 0, 40, -30, 90, 150, 200, 260, 400, 600, 700
+    RX, SX, PCX, MX, TX, KX, RCX, STX = 0, 40, -30, 90, 200, 260, 400, 600
     room = set_room(RX)
     stop = set_busstop(SX)
     pc = set_phone_closeup(PCX, font)
     set_magic_stop(MX)
-    inter = set_bus_interior(IX)
     temple = set_temple(TX)
     ski = set_ski(KX)
     set_race(RCX)
     stad = set_stadium(STX)
-    end = set_endcard(EX, font)
     setup_world()
+    # S03_C02 끝: 버스 문이 열리며 쏟아지는 빛 (탑승 동작 대신)
+    door_light = light("door_burst", "AREA", (MX - 2.1, 3.0, 1.4), "#FFE6C0", 0, rot=(-90, 0, 0), size=2.5)
+    energy_key(door_light, f(13.25), 0)
+    energy_key(door_light, f(14.0), 4000)
 
     # 폰 알림 빛 (동일 알림음 타이밍)
     pr, ps = room["phone"].data.materials[0], stop["phone"].data.materials[0]
@@ -570,9 +576,9 @@ def build():
         cuts.append((label, f(keys[0][0]), cam))
         return cam
 
-    def fade_to_black(cam, s0, s1):
-        """카메라 바로 앞 검은 판의 알파로 페이드아웃 (그림자 없음)."""
-        m = bpy.data.materials.new("fade_black")
+    def cam_overlay(cam, keys, color=(0, 0, 0, 1)):
+        """카메라 바로 앞 판의 알파로 페이드/플래시 (그림자 없음). keys: [(sec, alpha), ...]"""
+        m = bpy.data.materials.new("cam_overlay")
         m.use_nodes = True
         if hasattr(m, "surface_render_method"):
             m.surface_render_method = "BLENDED"
@@ -582,17 +588,17 @@ def build():
         mix = nt.nodes.new("ShaderNodeMixShader")
         tr = nt.nodes.new("ShaderNodeBsdfTransparent")
         em = nt.nodes.new("ShaderNodeEmission")
-        em.inputs["Color"].default_value = (0, 0, 0, 1)
+        em.inputs["Color"].default_value = color
         nt.links.new(tr.outputs[0], mix.inputs[1])
         nt.links.new(em.outputs[0], mix.inputs[2])
         nt.links.new(mix.outputs[0], out.inputs["Surface"])
         fac = mix.inputs["Fac"]
-        for fr, v in ((f(s0), 0.0), (f(s1), 1.0)):
+        for sec, v in keys:
             fac.default_value = v
-            fac.keyframe_insert("default_value", frame=fr)
+            fac.keyframe_insert("default_value", frame=f(sec))
         bpy.ops.mesh.primitive_plane_add(size=2)
         p = bpy.context.active_object
-        p.name = "fade_plane"
+        p.name = "cam_overlay"
         p.data.materials.append(m)
         p.parent = cam
         p.location = (0, 0, -0.15)
@@ -600,50 +606,64 @@ def build():
         if hasattr(p, "visible_shadow"):
             p.visible_shadow = False
 
-    # 카메라 구도표(Shot ID / 구도 / 움직임) 기준
-    # SCENE 01 — 현실
-    cut("S01_C01 OTS 3/4 side / slow push-in", 0, 3,
-        (RX + 0.55, -0.35, 1.55), (RX + 0.05, 1.1, 0.85), (RX + 0.42, -0.1, 1.5), (RX + 0.05, 1.1, 0.85), 35)
-    cut("S01_C02 wide establishing / dolly-in", 3, 7,
-        (SX - 1.5, -10, 2.0), (SX, 2, 1.4), (SX - 1.0, -7, 1.8), (SX, 2, 1.4), 24)
-    # SCENE 02 — 초대
+    # 시네마틱 원칙 (storyboard.json camera_principles):
+    #   인물은 화면 1/3 지점에 크게, 인물 컷 35~50mm, 앞쪽 사물로 깊이감, 표정이 보이는 3/4 각도,
+    #   모든 컷에 느린 카메라 이동, 움직이는 피사체는 진행 방향 앞쪽에 여백.
+    WHITE = (1.0, 0.93, 0.82, 1)
+    # SCENE 01 — 현실 (0–7초)
+    #   S01_C01: 책상 너머(벽 쪽)에서 서윤의 얼굴을 3/4로. 앞쪽 책 더미가 화면 오른쪽에 걸쳐 깊이감
+    cut("S01_C01 3/4 front MS over the desk / slow push-in", 0, 3,
+        (RX + 0.95, 2.0, 1.42), (RX + 0.7, 0.75, 1.12), (RX + 0.75, 1.7, 1.38), (RX + 0.6, 0.75, 1.14), 45)  # 서윤 오른쪽 1/3
+    #   S01_C02: 와이드지만 준호를 오른쪽 1/3에. 카메라와 준호 사이로 차 불빛이 지나감 (앞쪽 레이어)
+    cut("S01_C02 wide establishing (Junho right third) / dolly-in", 3, 7,
+        (SX - 3.6, -3.4, 1.15), (SX - 1.4, 1.8, 1.45), (SX - 2.6, -2.6, 1.2), (SX - 1.1, 1.8, 1.5), 35)  # 준호 오른쪽 1/3
+    # SCENE 02 — 초대 (7–10초)
     cut("S02_C01 top-down insert / static", 7, 8.5, (PCX, 0.15, 1.6), (PCX, 0.15, 0), lens=50)
     ph_r, ph_s = room["phone"].location, stop["phone"].location
-    cut("S02_C02-A ECU phone tap / static", 8.5, 9.25, (ph_r.x + 0.2, ph_r.y - 0.38, ph_r.z + 0.3), tuple(ph_r), lens=60)
-    cut("S02_C02-B ECU phone tap / static", 9.25, 10, (ph_s.x + 0.2, ph_s.y - 0.4, ph_s.z + 0.18), tuple(ph_s), lens=60)
-    # SCENE 03 — 이동
-    cut("S03_C01-A wide symmetrical / slow tracking", 10, 11, (RX - 0.3, -3.4, 1.4), (RX - 0.3, 2, 1.0), (RX + 0.3, -3.4, 1.4), (RX + 0.3, 2, 1.0), 22)
-    cut("S03_C01-B wide symmetrical / slow tracking", 11, 12, (SX - 0.5, -8, 1.6), (SX - 0.5, 2.4, 1.4), (SX + 0.5, -8, 1.6), (SX + 0.5, 2.4, 1.4), 28)
-    cut("S03_C02 low-angle hero / tracking", 12, 14, (MX + 3, -4.5, 0.3), (MX + 8, 4.6, 2.2), (MX - 3, -4.5, 0.3), (MX - 2, 2.5, 1.6), 18)
-    # SCENE 04 — 변신 (손 POV 공개)
-    cut("S04_C01 interior POV / forward tracking", 14, 16, (IX - 5.5, 0, 1.55), (IX + 6, 0, 1.3), (IX - 1.0, 0, 1.5), (IX + 6, 0, 1.3), 24)
+    #   A: 책상 위 폰을 위에서 비스듬히 — 빛나는 화면과 손이 놓일 자리
+    cut("S02_C02-A ECU phone on desk / static", 8.5, 9.25,
+        (ph_r.x + 0.18, ph_r.y - 0.32, ph_r.z + 0.38), (ph_r.x, ph_r.y + 0.03, ph_r.z), lens=50)
+    #   B: 아래에서 올려다본 폰 빛과 준호의 얼굴 (폰 빛이 얼굴을 비춤)
+    cut("S02_C02-B low ECU phone glow on face / static", 9.25, 10,
+        (ph_s.x + 0.25, ph_s.y - 0.75, ph_s.z - 0.15), (ph_s.x - 0.05, ph_s.y + 0.25, ph_s.z + 0.3), lens=50)
+    # SCENE 03 — 이동 (10–14초)
+    cut("S03_C01-A wide symmetrical / slow tracking", 10, 11,
+        (RX - 0.35, -2.3, 1.25), (RX - 0.15, 1.6, 1.05), (RX + 0.35, -2.3, 1.25), (RX + 0.15, 1.6, 1.05), 28)
+    cut("S03_C01-B wide symmetrical / slow tracking", 11, 12,
+        (SX - 0.4, -5.2, 1.35), (SX - 0.2, 2.2, 1.4), (SX + 0.4, -5.2, 1.35), (SX + 0.2, 2.2, 1.4), 35)
+    #   S03_C02: 두 사람 뒤 낮은 OTS 히어로 샷 — 실루엣이 앞쪽 좌우, 버스·마스코트가 중앙. 문이 열리며 빛이 화면을 덮음
+    c = cut("S03_C02 low OTS hero / bus arrives, door light floods", 12, 14,
+            (MX - 4.4, -1.9, 0.5), (MX - 1.6, 4.2, 1.9), (MX - 3.6, -1.5, 0.55), (MX - 2.0, 3.6, 1.7), 28)
+    cam_overlay(c, [(13.3, 0.0), (14.0, 1.0)], WHITE)
+    # SCENE 04 — 변신: 손 POV (14–17초). 빛에서 페이드인 → 손 유지 → 틸트업
     tp = temple["pov"]
-    hands_t = (tp[0], tp[1] + 0.35, tp[2] - 0.4)
-    cut_path("S04_C02-A first-person POV / tilt-up (monk)",
-             [(16, tp, hands_t), (16.6, tp, hands_t), (17.5, tp, (tp[0], tp[1] + 10, tp[2] + 0.4))], lens=26)
+    hands_t = (tp[0], tp[1] + 0.32, tp[2] - 0.42)
+    c = cut_path("S04_C01-A first-person POV / tilt-up (monk)",
+                 [(14, tp, hands_t), (14.6, tp, hands_t), (15.5, tp, (tp[0], tp[1] + 10, tp[2] + 0.4))], lens=24)
+    cam_overlay(c, [(14.0, 1.0), (14.35, 0.0)], WHITE)
     kp = ski["pov"]
-    hands_k = (kp[0], kp[1] + 0.5, kp[2] - 0.6)
-    cut_path("S04_C02-B first-person POV / tilt-up (ski)",
-             [(17.5, kp, hands_k), (18.1, kp, hands_k), (19, kp, (kp[0], kp[1] + 30, kp[2] - 3))], lens=26)
-    # SCENE 05 — 체험 몽타주
-    cut("S05_C01 side tracking", 19, 21,
-        (KX + 7, -10, 8.76), (KX, -10, 8.66), (KX + 5, 25, slope_z(25) + 1.0), (KX - 2, 25, slope_z(25) + 0.9), 35)
+    hands_k = (kp[0], kp[1] + 0.45, kp[2] - 0.62)
+    cut_path("S04_C01-B first-person POV / tilt-up (ski)",
+             [(15.5, kp, hands_k), (16.0, kp, hands_k), (17, kp, (kp[0], kp[1] + 30, kp[2] - 3))], lens=24)
+    # SCENE 05 — 체험 몽타주 (17–25초)
+    #   S05_C01: 스키어 옆을 같은 속도로, 스키어는 왼쪽 1/3 + 진행 방향(+Y) 앞쪽에 여백
+    cut("S05_C01 side tracking (lead room)", 17, 19.5,
+        (KX + 4.5, -11.5, 7.76 + 1.0), (KX - 0.3, -7.5, 7.76 + 0.8),
+        (KX + 2.5, 23.0, slope_z(23.0) + 1.0), (KX - 2.3, 27.0, slope_z(27.0) + 0.7), 35)
 
-    def car_x(t):  # set_race 키: 21초 RCX-60 → 23초 RCX+60 (등속)
-        return RCX - 60 + 60 * (t - 21)
+    def car_x(t):  # set_race 키: 19.5초 RCX-60 → 22초 RCX+60 (등속 48/s)
+        return RCX - 60 + 48 * (t - 19.5)
 
-    cut("S05_C02-A low-angle chase", 21, 22.2,
-        (car_x(21) - 8, 0, 0.5), (car_x(21) + 4, 0, 0.7), (car_x(22.2) - 7, 0, 0.5), (car_x(22.2) + 4, 0, 0.7), 28)
-    cut("S05_C02-B driver POV (Newtake candidate)", 22.2, 23,
-        (car_x(22.2) + 0.2, 0, 1.35), (car_x(22.2) + 30, 0, 1.0), (car_x(23) + 0.2, 0, 1.35), (car_x(23) + 30, 0, 1.0), 24)
-    cut("S05_C03 medium two-shot / crane-up", 23, 25, (STX, 18.2, 2.6), (STX, 21.2, 2.5), (STX, 16, 7.5), (STX, 21.2, 2.4), 40)
-    # SCENE 06 — 재초대
-    c = cut("S06_C01 wide back shot / fade-out", 25, 27, (STX + 0.3, 24.4, 4.6), (STX, 5, 0.5), (STX + 0.3, 24.0, 4.5), (STX, 5, 0.5), 24)
-    fade_to_black(c, 25.8, 27)
-    # S06_C02~C04: 최종 인코딩에서 05_PRODUCTION/motion_graphics/ending 영상으로 교체 (아래는 블록아웃)
-    cut("S06_C02 invitation again", 27, 28, (EX, -4, 0), end["center"], lens=50)
-    cut("S06_C03 logo", 28, 29, (EX, -4, 0), end["center"], lens=50)
-    cut("S06_C04 metabus.app", 29, 30, (EX, -4, 0), end["center"], lens=50)
+    #   S05_C02-A: 낮은 3/4 후방 추격 — 차를 화면 왼쪽에, 진행 방향 앞쪽 여백
+    cut("S05_C02-A low 3/4 rear chase", 19.5, 20.7,
+        (car_x(19.5) - 6.5, -2.2, 0.55), (car_x(19.5) + 5, 0.4, 0.75),
+        (car_x(20.7) - 6.0, -2.0, 0.55), (car_x(20.7) + 5, 0.4, 0.75), 28)
+    cut("S05_C02-B driver POV (Newtake candidate)", 20.7, 22,
+        (car_x(20.7) + 0.2, 0, 1.35), (car_x(20.7) + 30, 0, 1.0), (car_x(22) + 0.2, 0, 1.35), (car_x(22) + 30, 0, 1.0), 24)
+    #   S05_C03: 세 명 미디엄 샷(정면 약간 로우) → 크레인업으로 관중석·조명 공개
+    cut("S05_C03 medium three-shot / crane-up", 22, 25,
+        (STX + 0.4, 18.4, 2.0), (STX + 0.35, 21.2, 2.4), (STX + 0.4, 15.5, 6.5), (STX + 0.3, 21.2, 2.7), 40)
+    # SCENE 06 (25–30초): HTML 엔딩 — 05_PRODUCTION/motion_graphics/ending_html (최종 인코딩에서 이어 붙임)
 
     for label, frame, cam in cuts:
         m = sc.timeline_markers.new(label, frame=frame)

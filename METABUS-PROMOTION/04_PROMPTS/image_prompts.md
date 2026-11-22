@@ -137,17 +137,10 @@ low angle cinematic shot, {BUS} arriving and stopping at a magical bus stop unde
 
 ---
 
-## SCENE 04. 현실의 나에서 새로운 캐릭터로 (14–19초)
+## SCENE 04. 현실의 나에서 새로운 캐릭터로 (14–17초)
 
-### IMG_S04_C01
-- Shot: S04_C01 (14–16초) · 캐릭터: CHAR_01, CHAR_02
-```
-cinematic interior of {BUS}, cozy futuristic cabin with indigo seats and yellow accent lights, warm glowing light wrapping around {CHAR_01_REAL} and {CHAR_02_REAL} seated inside, realism starting to soften, tracking shot moving into the cabin, {LIGHT_INVITE}, {FRAME}
-```
-- 결과 파일: `03_STORYBOARD/storyboard_images/S04_C01.png` · 채택: [ ]
-
-### IMG_S04_C02 (A: 준호 스님 / B: 서윤 스키) — 첫 변신 공개
-- Shot: S04_C02 (16–19초) · 각 2장: ① POV 손 ② 고개를 든 공간 공개
+### IMG_S04_C01 (A: 준호 스님 / B: 서윤 스키) — 첫 변신 공개
+- Shot: S04_C01 (14–17초) · 각 2장: ① POV 손 ② 고개를 든 공간 공개 (버스 문 빛에서 페이드인)
 - 변신 과정은 그리지 않음. 담백한 톤.
 ```
 A1) {STYLE_STYLIZED}, first-person POV looking down at his own hands holding wooden prayer beads, gray monk robe sleeves, soft morning light, {FRAME}
@@ -156,7 +149,7 @@ A2) {STYLE_STYLIZED}, a quiet Korean mountain temple at dawn, mist over the moun
 B1) {STYLE_STYLIZED}, first-person POV looking down at her own gloved hands gripping ski poles, skis on fresh snow, bright sunlight, {FRAME}
 B2) {STYLE_STYLIZED}, the top of a snowy ski slope with a vast mountain view, {CHAR_01_SKIER} standing ready at the edge, wide shot, {FRAME}
 ```
-- 결과 파일: `S04_C02_A1.png`, `S04_C02_A2.png`, `S04_C02_B1.png`, `S04_C02_B2.png` · 채택: [ ]
+- 결과 파일: `S04_C01_A1.png`, `S04_C01_A2.png`, `S04_C01_B1.png`, `S04_C01_B2.png` · 채택: [ ]
 
 ---
 
@@ -164,14 +157,14 @@ B2) {STYLE_STYLIZED}, the top of a snowy ski slope with a vast mountain view, {C
 > 체험형 몽타주. 실제 서비스 화면은 AI 생성 대신 캡처/녹화 삽입 (편집 단계).
 
 ### IMG_S05_C01 — 스키장 활강
-- Shot: S05_C01 (19–21초) · 캐릭터: CHAR_01
+- Shot: S05_C01 (17–19.5초) · 캐릭터: CHAR_01
 ```
 {STYLE_STYLIZED}, {CHAR_01_SKIER} carving down a snowy slope at high speed, powder snow spraying in the air, sparkling sunlight, dynamic low angle, motion and speed, {FRAME}
 ```
 - 결과 파일: `03_STORYBOARD/storyboard_images/S05_C01.png` · 채택: [ ]
 
 ### IMG_S05_C02 — 카레이싱 ⭐Newtake 영상 후보
-- Shot: S05_C02 (21–23초) · 캐릭터: CHAR_02
+- Shot: S05_C02 (19.5–22초) · 캐릭터: CHAR_02
 ```
 {STYLE_STYLIZED}, {CHAR_02_RACER} driving a sleek race car at full speed on a vibrant race track, motion blur, low tracking angle beside the car, sunset light, exhilarating, no real brand or sponsor logos, {FRAME}
 ```
@@ -179,7 +172,7 @@ B2) {STYLE_STYLIZED}, the top of a snowy ski slope with a vast mountain view, {C
 - 이 이미지를 Newtake 영상 생성의 시작 프레임으로 사용
 
 ### IMG_S05_C03 — 야구장 응원 (소셜)
-- Shot: S05_C03 (23–25초) · 캐릭터: CHAR_01, CHAR_02, MASCOT_01
+- Shot: S05_C03 (22–25초) · 캐릭터: CHAR_01, CHAR_02, MASCOT_01
 ```
 {STYLE_STYLIZED}, a packed baseball stadium at night under bright floodlights, {FAN}, the teenage girl and the young man from earlier meeting in the stands and cheering together, {MASCOT} cheering beside them, confetti, joyful energy, {FRAME}
 ```
@@ -187,19 +180,6 @@ B2) {STYLE_STYLIZED}, the top of a snowy ski slope with a vast mountain view, {C
 
 ---
 
-## SCENE 06. 다시 도착한 초대 (25–30초)
-
-### IMG_S06_C01 — 경험의 여운
-- Shot: S06_C01 (25–27초) · 앞 컷들의 교차 편집 + 마지막 1장
-```
-{STYLE_STYLIZED}, after the game, the baseball stadium under a warm sunset sky, the two fans and {MASCOT} sitting together in the stands, warm light slowly fading, peaceful, wide shot, {FRAME}
-```
-- 결과 파일: `03_STORYBOARD/storyboard_images/S06_C01.png` · 채택: [ ]
-
-### IMG_S06_C02 ~ C04 — AI 생성 제외
-- S06_C02 알림 UI, S06_C03 로고, S06_C04 `metabus.app` → **모션그래픽/편집 제작**
-- 배경 플레이트만 필요 시:
-```
-deep night navy background with a soft violet starry glow and faint warm golden light in the center, minimal, clean, empty space for a logo, 16:9
-```
-- 결과 파일: `03_STORYBOARD/storyboard_images/S06_BG.png` · 채택: [ ]
+## SCENE 06. 다시 도착한 초대 (25–30초) — 엔딩 모션그래픽
+- `05_PRODUCTION/motion_graphics/ending_html/` (ending_storybord2.png 기준, HTML/CSS)에서 제작
+- 필요한 배경 이미지(E03 도시·버스, E04 하늘) 프롬프트: `05_PRODUCTION/motion_graphics/ending_html/ASSET_PROMPTS.md`
