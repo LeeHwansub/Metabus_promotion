@@ -1,0 +1,347 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>metaBus Image Animatic</title>
+<!--
+  metaBus 이미지 애니매틱 v1 — 본편 0~25초 (엔딩 25~30초는 ending_three)
+  GPT 이미지(05_PRODUCTION/images)에 카메라 이동·빛·파티클을 코드로 얹는다. 2D canvas, 외부 라이브러리 없음.
+
+  사용: index.html?a=16x9|9x16                 → 미리보기 (로컬 서버로 열 것)
+        index.html?a=16x9&t=12.5               → 한 프레임
+        index.html?a=16x9&mode=render          → ending_three/render.mjs --page motion_graphics/animatic/index.html --frames 600
+        &labels=0                              → 컷 ID·"이미지 대기" 표시 숨김
+
+  컷 이미지 우선순위: images/<컷ID>.png (장면 완성 이미지) → 아래 FALLBACK 배경 이미지 + "대기" 표시
+-->
+<style>
+  html, body { margin: 0; background: #000; overflow: hidden; }
+  canvas { display: block; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<script type="module">
+window.addEventListener('error', e => { window.ERR = String(e.message || e); });
+
+const Q = new URLSearchParams(location.search);
+const V = Q.get('a') === '9x16';
+const W = V ? 1080 : 1920, H = V ? 1920 : 1080;
+const MODE = Q.get('mode') || (Q.has('t') ? 'frame' : 'preview');
+const LABELS = Q.get('labels') !== '0';
+const IMG = '../../images/';
+const FONT_KR = '"Apple SD Gothic Neo", "Noto Sans KR", sans-serif';
+const FONT_UI = '-apple-system, "SF Pro Display", "Helvetica Neue", sans-serif';
+const FONT_WORD = '"Avenir Next", "Futura", sans-serif';
+
+const cv = document.getElementById('c'); cv.width = W; cv.height = H;
+const ctx = cv.getContext('2d');
+
+// ------------------------------------------------------------ 유틸
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const lerp = (a, b, k) => a + (b - a) * k;
+const prog = (t, a, b) => clamp((t - a) / (b - a));
+const eIO = k => -(Math.cos(Math.PI * k) - 1) / 2;
+const eOut = k => 1 - Math.pow(1 - k, 3);
+const eIn = k => k * k * k;
+function rng(seed) { return () => (seed = (seed * 16807) % 2147483647) / 2147483647; }
+function rr(x, y, w, h, r) { ctx.beginPath(); ctx.roundRect(x, y, w, h, r); }
+const MARK = new Path2D('M 18 88 L 34 38 Q 42 16 62 20 Q 78 25 70 48 L 57 88 M 70 48 Q 80 18 100 20 Q 118 24 110 48 L 97 88');
+function drawMark(cx, cy, h, bright = false) {
+  const s = h / 100;
+  ctx.save(); ctx.translate(cx - 72.5 * s, cy - 54 * s); ctx.scale(s, s);
+  const g = ctx.createLinearGradient(0, 0, 145, 0);
+  g.addColorStop(0, bright ? '#7FA2FF' : '#4F7BFF'); g.addColorStop(1, bright ? '#B08CFF' : '#8B5CF6');
+  ctx.strokeStyle = g; ctx.lineWidth = 24; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.stroke(MARK); ctx.restore();
+}
+function loadImage(src) {
+  return new Promise(res => { const im = new Image(); im.onload = () => res(im); im.onerror = () => res(null); im.src = src; });
+}
+
+// 이미지를 사각형(rx,ry,rw,rh)에 cover로 그림. 줌 z, 이미지상의 초점(fx,fy)을 화면 중앙에. 가장자리가 비지 않게 고정.
+// 반환값 P(u,v): 이미지 좌표(0~1) → 화면 좌표 (오버레이 위치 계산용)
+function cover(img, z, fx, fy, rect = [0, 0, W, H], filter = 'none', shake = [0, 0]) {
+  const [rx, ry, rw, rh] = rect;
+  const s = Math.max(rw / img.width, rh / img.height) * z, dw = img.width * s, dh = img.height * s;
+  let x = rx + rw / 2 - fx * dw + shake[0], y = ry + rh / 2 - fy * dh + shake[1];
+  x = Math.min(rx, Math.max(rx + rw - dw, x)); y = Math.min(ry, Math.max(ry + rh - dh, y));
+  ctx.save(); ctx.beginPath(); ctx.rect(rx, ry, rw, rh); ctx.clip();
+  ctx.filter = filter; ctx.drawImage(img, x, y, dw, dh); ctx.filter = 'none'; ctx.restore();
+  return (u, v) => [x + u * dw, y + v * dh, dw];
+}
+function glow(x, y, r, rgb, a, mode = 'lighter') {
+  if (a <= 0) return;
+  ctx.save(); ctx.globalCompositeOperation = mode;
+  const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+  g.addColorStop(0, `rgba(${rgb},${a})`); g.addColorStop(1, `rgba(${rgb},0)`);
+  ctx.fillStyle = g; ctx.fillRect(x - r, y - r, r * 2, r * 2); ctx.restore();
+}
+function wash(rgb, a, mode = 'source-over') {
+  if (a <= 0) return;
+  ctx.save(); ctx.globalCompositeOperation = mode; ctx.fillStyle = `rgba(${rgb},${a})`; ctx.fillRect(0, 0, W, H); ctx.restore();
+}
+function vignette(a = .45) {
+  const g = ctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * .35, W / 2, H / 2, Math.max(W, H) * .75);
+  g.addColorStop(0, 'rgba(10,8,30,0)'); g.addColorStop(1, `rgba(10,8,30,${a})`);
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+}
+function ding(x, y, k, size) {                     // 알림 '띵' 세 줄
+  if (k <= 0) return;
+  ctx.save(); ctx.strokeStyle = `rgba(255,255,255,${k})`; ctx.lineWidth = size * .07; ctx.lineCap = 'round';
+  ctx.shadowColor = 'rgba(200,210,255,.9)'; ctx.shadowBlur = size * .25;
+  [200, 225, 250].forEach(a => {
+    const c = Math.cos(a * Math.PI / 180), s = Math.sin(a * Math.PI / 180), r0 = size * (.35 + .1 * k), r1 = r0 + size * .45;
+    ctx.beginPath(); ctx.moveTo(x + c * r0, y + s * r0); ctx.lineTo(x + c * r1, y + s * r1); ctx.stroke();
+  });
+  ctx.restore();
+}
+function sparkles(seed, n, t, area, rise, alpha) {  // 위로 떠오르는 빛 입자
+  const r = rng(seed); ctx.save(); ctx.globalCompositeOperation = 'lighter';
+  for (let i = 0; i < n; i++) {
+    const x0 = area[0] + r() * area[2], y0 = area[1] + r() * area[3], sp = .4 + r(), ph = r() * 6, sz = 2 + r() * 5;
+    const y = y0 - ((t * rise * sp + ph * 40) % area[3]), x = x0 + Math.sin(t * 2 + ph) * 12;
+    const a = alpha * (.4 + .6 * Math.abs(Math.sin(t * 3 + ph)));
+    ctx.fillStyle = `rgba(220,215,255,${a})`; ctx.beginPath(); ctx.arc(x, y < area[1] ? y + area[3] : y, sz, 0, Math.PI * 2); ctx.fill();
+  }
+  ctx.restore();
+}
+function flash(a, rgb = '246,244,255') { wash(rgb, clamp(a)); }
+function label(id, note) {
+  if (!LABELS) return;
+  const s = V ? 1.15 : 1;
+  ctx.save();
+  const t1 = id, t2 = note ? `  ${note}` : '';
+  ctx.font = `600 ${22 * s}px ${FONT_KR}`; const w = ctx.measureText(t1 + t2).width + 36 * s;
+  ctx.fillStyle = 'rgba(12,12,40,.62)'; rr(24 * s, 24 * s, w, 44 * s, 22 * s); ctx.fill();
+  ctx.fillStyle = '#fff'; ctx.textBaseline = 'middle'; ctx.fillText(t1, 42 * s, 47 * s);
+  if (note) { ctx.fillStyle = '#FCC024'; ctx.fillText(t2, 42 * s + ctx.measureText(t1).width, 47 * s); }
+  ctx.restore();
+}
+function shakeAt(t, amp, seed = 1) { return [Math.sin(t * 37 + seed) * amp + Math.sin(t * 23) * amp * .5, Math.cos(t * 31 + seed) * amp * .7]; }
+
+// ------------------------------------------------------------ 폰 UI (S02)
+function drawPhoneUI(t, press, bloom) {
+  const ph = V ? H * .78 : H * .94, pw = ph * .48, cx = W / 2, cy = H / 2 + (V ? 0 : H * .02);
+  const zoom = 1 + .03 * prog(t, 7, 10);
+  ctx.save(); ctx.translate(cx, cy); ctx.rotate(-.035); ctx.scale(zoom, zoom); ctx.translate(-pw / 2, -ph / 2);
+  ctx.shadowColor = 'rgba(0,0,0,.55)'; ctx.shadowBlur = 60; ctx.shadowOffsetY = 30;
+  ctx.fillStyle = '#1A1B24'; rr(0, 0, pw, ph, pw * .14); ctx.fill(); ctx.shadowColor = 'transparent';
+  const m = pw * .035, sw = pw - 2 * m, sh = ph - 2 * m;
+  ctx.save(); rr(m, m, sw, sh, pw * .11); ctx.clip();
+  const g = ctx.createLinearGradient(0, m, 0, m + sh); g.addColorStop(0, '#5E5AB4'); g.addColorStop(1, '#23255E');
+  ctx.fillStyle = g; ctx.fillRect(m, m, sw, sh);
+  ctx.fillStyle = '#050508'; rr(pw / 2 - pw * .15, m + pw * .03, pw * .3, pw * .075, pw * .04); ctx.fill();
+  ctx.fillStyle = 'rgba(255,255,255,.9)'; ctx.textAlign = 'center'; ctx.font = `300 ${pw * .2}px ${FONT_UI}`;
+  ctx.fillText('9:41', pw / 2, m + sh * .2);
+  // 초대 카드
+  const kx = m + sw * .07, kw = sw * .86, ky = m + sh * .36, kh = sh * .42;
+  ctx.fillStyle = 'rgba(244,242,255,.94)'; rr(kx, ky, kw, kh, pw * .07); ctx.fill();
+  drawMark(pw / 2, ky + kh * .16, pw * .12);
+  ctx.fillStyle = '#15173A'; ctx.font = `600 ${pw * .085}px ${FONT_WORD}`; ctx.fillText('metaBus', pw / 2, ky + kh * .36);
+  ctx.fillStyle = '#3A3C62'; ctx.font = `500 ${pw * .048}px ${FONT_KR}`;
+  ctx.fillText('새로운 경험이 기다리고 있습니다.', pw / 2, ky + kh * .52);
+  ctx.fillStyle = '#15173A'; ctx.font = `700 ${pw * .056}px ${FONT_KR}`;
+  ctx.fillText('metaBus에 참여하시겠습니까?', pw / 2, ky + kh * .66);
+  const bx = kx + kw * .12, bw = kw * .76, by = ky + kh * .76, bh = kh * .15;
+  const bg = ctx.createLinearGradient(bx, 0, bx + bw, 0); bg.addColorStop(0, '#5A72FF'); bg.addColorStop(1, '#7C5CF6');
+  ctx.save(); ctx.translate(pw / 2, by + bh / 2); ctx.scale(1 - .05 * press, 1 - .05 * press); ctx.translate(-pw / 2, -(by + bh / 2));
+  ctx.fillStyle = bg; rr(bx, by, bw, bh, bh / 2); ctx.fill();
+  ctx.fillStyle = '#fff'; ctx.font = `700 ${pw * .058}px ${FONT_KR}`; ctx.textBaseline = 'middle'; ctx.fillText('참여하기', pw / 2, by + bh / 2 + 2);
+  ctx.restore();
+  if (press > 0) {                                   // 터치 물결
+    ctx.strokeStyle = `rgba(255,255,255,${.8 * (1 - press)})`; ctx.lineWidth = pw * .01;
+    ctx.beginPath(); ctx.arc(pw / 2, by + bh / 2, pw * (.05 + .25 * press), 0, Math.PI * 2); ctx.stroke();
+  }
+  ctx.restore(); ctx.restore();
+  if (bloom > 0) {                                   // 화면에서 퍼지는 빛
+    glow(cx, cy, Math.max(W, H) * (.2 + 1.1 * bloom), '232,226,255', .95 * bloom, 'source-over');
+    glow(cx, cy, Math.max(W, H) * (.1 + .5 * bloom), '255,248,236', .8 * bloom);
+  }
+}
+
+// ------------------------------------------------------------ 야구장: 실제 구단 표시를 metaBus 패널로 덮기
+function stadiumCovers(P) {
+  const panel = (u0, v0, u1, v1, vertical) => {
+    const [x0, y0] = P(u0, v0), [x1, y1] = P(u1, v1), w = x1 - x0, h = y1 - y0;
+    const g = ctx.createLinearGradient(x0, y0, x1, y1); g.addColorStop(0, '#141A66'); g.addColorStop(1, '#2A2F9A');
+    ctx.fillStyle = g; rr(x0, y0, w, h, Math.min(w, h) * .06); ctx.fill();
+    ctx.strokeStyle = 'rgba(160,180,255,.6)'; ctx.lineWidth = Math.max(1, w * .01); ctx.stroke();
+    if (vertical) { drawMark(x0 + w / 2, y0 + h * .35, w * .45, true);
+      ctx.save(); ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.font = `600 ${w * .2}px ${FONT_WORD}`; ctx.fillText('metaBus', x0 + w / 2, y0 + h * .7); ctx.restore(); }
+    else { drawMark(x0 + w * .27, y0 + h * .52, h * .46, true);
+      ctx.save(); ctx.fillStyle = '#fff'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.font = `600 ${h * .32}px ${FONT_WORD}`; ctx.fillText('metaBus', x0 + w * .42, y0 + h * .55); ctx.restore(); }
+  };
+  panel(.412, .396, .613, .536, false);
+  panel(.297, .31, .348, .506, true);
+  panel(.669, .322, .723, .506, true);
+}
+
+// ------------------------------------------------------------ 컷 정의
+// base: FALLBACK 배경 이미지 키, need: 장면 이미지가 없을 때 표시할 문구
+const FALLBACK = { room: 'S01_C01_bg_room', stop: 'S01_C02_bg_busstop', hall: 'S04_C01_A_bg_temple_hall', resort: 'S04_C01_B_bg_ski_resort',
+  ski: 'S05_C01_ski_run', race: 'S05_C02_racing', stadium: 'S05_C03_bg_stadium_NEEDS_FIX' };
+const SHOTS = [
+  { id: 'S01_C01', a: 0, b: 3, base: 'room', need: '서윤 인물 이미지 대기 (배경만)' },
+  { id: 'S01_C02', a: 3, b: 7, base: 'stop', need: '준호 인물 이미지 대기 (배경만)' },
+  { id: 'S02_C01', a: 7, b: 8.5, base: null, need: '' },
+  { id: 'S02_C02', a: 8.5, b: 10, base: null, need: '누르는 손 이미지 대기' },
+  { id: 'S03_C01', a: 10, b: 12, base: null, need: '' },
+  { id: 'S03_C02', a: 12, b: 14, base: 'stop', need: '버스 도착 · 마스코트 이미지 대기' },
+  { id: 'S04_C01_A', a: 14, b: 15.5, base: 'hall', need: '손 POV(염주) 이미지 대기' },
+  { id: 'S04_C01_B', a: 15.5, b: 17, base: 'resort', need: '손 POV(스키 장갑) 이미지 대기' },
+  { id: 'S05_C01', a: 17, b: 19.5, base: 'ski', need: '' },
+  { id: 'S05_C02', a: 19.5, b: 22, base: 'race', need: '' },
+  { id: 'S05_C03', a: 22, b: 25, base: 'stadium', need: '관중석 두 사람 이미지 대기 · 전광판은 임시로 가림' },
+];
+const IM = {};       // 키 → 이미지
+const SCENE = {};    // 컷ID → 장면 완성 이미지 (있으면)
+
+const REAL = 'saturate(.72) brightness(.82) contrast(1.06)';      // 현실 톤
+const FANT = 'saturate(1.08) brightness(1.02)';                     // 가상 세계 톤
+
+function drawShot(sh, t) {
+  const k = prog(t, sh.a, sh.b), img = SCENE[sh.id] || (sh.base && IM[sh.base]);
+  const done = !!SCENE[sh.id];
+  switch (sh.id) {
+    case 'S01_C01': {
+      const P = cover(img, lerp(1.05, 1.16, eIO(k)), lerp(.5, .42, eIO(k)), .55, undefined, REAL);
+      wash('40,50,110', .18, 'multiply');
+      const [px, py, dw] = P(.33, .6), n = prog(t, 2.25, 2.5), off = prog(t, 2.6, 3);
+      glow(px, py, dw * .12, '210,220,255', .9 * n * (1 - .5 * off));
+      ding(px - dw * .03, py - dw * .03, n * (1 - off), dw * .05);
+      break;
+    }
+    case 'S01_C02': {
+      const P = cover(img, lerp(1.0, 1.12, eIO(k)), lerp(.5, .4, eIO(k)), .55, undefined, REAL);
+      wash('30,40,100', .15, 'multiply');
+      const lk = prog(t, 3.5, 4.7);                  // 앞쪽을 지나가는 차 불빛
+      if (lk > 0 && lk < 1) { const x = lerp(-W * .3, W * 1.3, lk);
+        glow(x, H * .9, W * .2, '255,236,210', .55); glow(x - W * .12, H * .92, W * .1, '255,90,90', .35); }
+      const [px, py, dw] = P(.38, .66), n = prog(t, 5.75, 6.0), off = prog(t, 6.2, 6.8);
+      glow(px, py, dw * .1, '210,220,255', .9 * n * (1 - .5 * off));
+      ding(px - dw * .025, py - dw * .03, n * (1 - off), dw * .045);
+      break;
+    }
+    case 'S02_C01': {
+      cover(IM.room, 1.3, .35, .6, undefined, 'blur(22px) brightness(.4) saturate(.6)');
+      drawPhoneUI(t, 0, 0);
+      break;
+    }
+    case 'S02_C02': {
+      cover(IM.room, 1.3, .35, .6, undefined, 'blur(22px) brightness(.4) saturate(.6)');
+      drawPhoneUI(t, prog(t, 8.85, 9.15), eIn(prog(t, 9.1, 10)));
+      break;
+    }
+    case 'S03_C01': {                                // 방(A)과 정류장(B)이 빛과 함께 metaBus 세계로
+      const half = V ? [[0, 0, W, H / 2], [0, H / 2, W, H / 2]] : [[0, 0, W / 2, H], [W / 2, 0, W / 2, H]];
+      const tr = eIO(k), tone = `saturate(${lerp(.72, 1.15, tr)}) brightness(${lerp(.95, 1.08, tr)}) hue-rotate(${lerp(0, 12, tr)}deg)`;
+      const A = cover(IM.room, lerp(1.25, 1.15, tr), lerp(.28, .38, tr), .58, half[0], tone);
+      const B = cover(IM.stop, lerp(1.25, 1.15, tr), lerp(.32, .42, tr), .6, half[1], tone);
+      wash('150,120,255', .28 * tr, 'soft-light'); wash('255,255,255', .9 * (1 - eOut(prog(t, 10, 10.45))));
+      [[A, .33, .6], [B, .38, .66]].forEach(([P, u, v]) => { const [x, y, dw] = P(u, v); glow(x, y, dw * lerp(.1, .9, tr), '226,220,255', .7); });
+      ctx.fillStyle = 'rgba(235,230,255,.85)'; V ? ctx.fillRect(0, H / 2 - 2, W, 4) : ctx.fillRect(W / 2 - 2, 0, 4, H);
+      sparkles(5, 70, t, [0, 0, W, H], 140, .8 * tr);
+      break;
+    }
+    case 'S03_C02': {                                // 멀리 보이는 버스로 다가가며 빛 → 화면을 덮음
+      const z = lerp(1.15, 2.6, eIn(k) * .6 + k * .4);
+      const P = cover(img, done ? lerp(1.05, 1.15, k) : z, done ? .5 : .84, done ? .55 : .66, undefined, FANT);
+      wash('140,110,255', .25, 'soft-light');
+      if (!done) { const [x, y, dw] = P(.865, .69); glow(x, y, dw * lerp(.04, .25, k), '226,232,255', .9); }
+      sparkles(9, 50, t, [0, 0, W, H], 120, .7);
+      flash(eIn(prog(t, 13.2, 14)));
+      break;
+    }
+    case 'S04_C01_A': {                              // 고개를 들어 공간 공개 (틸트업)
+      cover(img, lerp(1.32, 1.18, eIO(k)), .5, lerp(.78, .4, eIO(k)), undefined, FANT);
+      glow(W * .5, H * .35, Math.max(W, H) * .5, '255,214,160', .18);
+      flash(1 - eOut(prog(t, 14, 14.45))); flash(eIn(prog(t, 15.38, 15.5)));
+      break;
+    }
+    case 'S04_C01_B': {
+      cover(img, lerp(1.3, 1.15, eIO(k)), .52, lerp(.85, .42, eIO(k)), undefined, FANT);
+      flash(1 - eOut(prog(t, 15.5, 15.8)));
+      break;
+    }
+    case 'S05_C01': {                                // 스키 활강: 따라가는 카메라 + 눈보라
+      const sk = shakeAt(t, 4);
+      cover(img, lerp(1.16, 1.28, k), lerp(.44, .54, k), .5, undefined, FANT, sk);
+      const r = rng(17); ctx.save(); ctx.lineCap = 'round';
+      for (let i = 0; i < 160; i++) {
+        const sp = .6 + r(), x0 = r() * W * 1.4, y0 = r() * H, len = 10 + r() * 30, sz = 1.5 + r() * 3.5;
+        const x = ((x0 - t * 900 * sp) % (W * 1.4) + W * 1.4) % (W * 1.4) - W * .2, y = (y0 + t * 260 * sp) % H;
+        ctx.strokeStyle = `rgba(255,255,255,${.35 + r() * .5})`; ctx.lineWidth = sz;
+        ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + len, y - len * .3); ctx.stroke();
+      }
+      ctx.restore();
+      flash(.6 * (1 - eOut(prog(t, 17, 17.18))));
+      break;
+    }
+    case 'S05_C02': {                                // 레이싱: 줌인 + 흔들림 + 속도선 (줌 1.15 이상 → 오른쪽 아래 워터마크 잘림)
+      const sk = shakeAt(t, 7, 3);
+      cover(img, lerp(1.18, 1.36, eIn(k) * .5 + k * .5), .5, .52, undefined, FANT, sk);
+      const r = rng(23); ctx.save(); ctx.globalCompositeOperation = 'lighter';
+      for (let i = 0; i < 70; i++) {
+        const ang = r() * Math.PI * 2, ph = r(), sp = .7 + r() * .8;
+        const d = ((t * 2.2 * sp + ph) % 1), r0 = Math.max(W, H) * (.18 + d * .7), r1 = r0 + Math.max(W, H) * (.06 + .12 * d);
+        ctx.strokeStyle = `rgba(230,236,255,${.5 * d})`; ctx.lineWidth = 1.5 + 2.5 * d;
+        ctx.beginPath(); ctx.moveTo(W / 2 + Math.cos(ang) * r0, H / 2 + Math.sin(ang) * r0);
+        ctx.lineTo(W / 2 + Math.cos(ang) * r1, H / 2 + Math.sin(ang) * r1); ctx.stroke();
+      }
+      ctx.restore();
+      flash(.6 * (1 - eOut(prog(t, 19.5, 19.68))));
+      break;
+    }
+    case 'S05_C03': {                                // 야구장: 크레인업 + 카메라 플래시 + 꽃가루
+      const P = cover(img, lerp(1.34, 1.12, eIO(k)), .5, lerp(.72, .45, eIO(k)), undefined, FANT);
+      if (!done) stadiumCovers(P);
+      const r = rng(31); ctx.save(); ctx.globalCompositeOperation = 'lighter';
+      for (let i = 0; i < 60; i++) {                 // 관중석 카메라 플래시
+        const [x, y] = P(r(), .3 + r() * .3), ph = r() * 10;
+        const a = Math.max(0, Math.sin(t * 7 + ph * 3)) ** 12;
+        ctx.fillStyle = `rgba(255,255,255,${a})`; ctx.beginPath(); ctx.arc(x, y, 3 + r() * 3, 0, Math.PI * 2); ctx.fill();
+      }
+      ctx.restore();
+      const cols = ['#FCC024', '#A8A8FC', '#FFFFFF', '#906CFC', '#6060E4'];
+      for (let i = 0; i < 90; i++) {                 // 꽃가루
+        const x = (r() * W + Math.sin(t * 2 + i) * 30), y = ((r() * H + (t - 22) * (120 + r() * 160)) % (H + 40)) - 20;
+        ctx.save(); ctx.translate(x, y); ctx.rotate(t * 3 + i); ctx.fillStyle = cols[i % cols.length];
+        ctx.globalAlpha = .85 * clamp((t - 22.2) / .4); ctx.fillRect(-5, -3, 10, 6); ctx.restore();
+      }
+      flash(.6 * (1 - eOut(prog(t, 22, 22.18))));
+      flash(eIn(prog(t, 24.75, 25)), '255,255,255');   // 엔딩(E01) 앞 플래시
+      break;
+    }
+  }
+  vignette(sh.id.startsWith('S01') ? .55 : .35);
+  label(sh.id, done ? '' : sh.need);
+}
+
+function renderAt(t) {
+  t = clamp(t, 0, 24.999);
+  const sh = SHOTS.find(s => t >= s.a && t < s.b) || SHOTS[SHOTS.length - 1];
+  ctx.clearRect(0, 0, W, H);
+  drawShot(sh, t);
+  return new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+}
+window.renderAt = renderAt;
+
+// ------------------------------------------------------------ 로드
+await Promise.all([
+  ...Object.entries(FALLBACK).map(async ([k, f]) => { IM[k] = await loadImage(IMG + f + '.png'); }),
+  ...SHOTS.map(async s => { const im = await loadImage(IMG + s.id + '.png'); if (im) SCENE[s.id] = im; }),
+]);
+const missing = Object.entries(IM).filter(([, v]) => !v).map(([k]) => FALLBACK[k]);
+if (missing.length) { window.ERR = '이미지 없음: ' + missing.join(', '); }
+window.ASSETS = { scene: Object.keys(SCENE), fallback: Object.keys(IM).filter(k => IM[k]) };
+await document.fonts.ready;
+await renderAt(MODE === 'frame' ? parseFloat(Q.get('t')) : 0);
+window.READY = true; document.title = 'ready';
+if (MODE === 'preview') {
+  const t0 = performance.now();
+  const loop = () => { renderAt(((performance.now() - t0) / 1000) % 25); requestAnimationFrame(loop); };
+  loop();
+}
+</script>
+</body>
+</html>
