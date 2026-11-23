@@ -21,15 +21,15 @@
 - 장면별 연기
   - SCENE 01: 문제를 풀다 펜을 내려놓고, 잠시 눈을 감고 지친 표정 → 책상 위 폰 알림
   - SCENE 02: 알림 확인 후 [참여하기]를 누름
-  - SCENE 03: METABUS 정류장으로 변한 공간에서 버스 탑승
+  - SCENE 03: METABUS 정류장으로 변한 공간에서 도착한 버스를 마주함 (탑승 동작은 생략)
 - 일관성 키워드: `18-year-old Korean high school girl, shoulder-length straight black hair, slim, tired eyes`
 
 ### 변신 형태 (스타일라이즈 3D)
 | 형태 | 체험 | 컷 | 모습 |
 |---|---|---|---|
-| 스키어 | 스키장 | S04_C02, S05_C01 | 밝은 색 스키복, 고글, 장갑, 폴 |
+| 스키어 | 스키장 | S04_C01, S05_C01 | 밝은 색 스키복, 고글, 장갑, 폴 |
 | 응원단 관중 | 야구장 | S05_C03 | 응원 유니폼, 응원봉 |
-- 손 공개(S04_C02): 스키 장갑을 낀 손에 폴 → 고개를 들면 눈 덮인 슬로프 꼭대기
+- 손 공개(S04_C01): 스키 장갑을 낀 손에 폴 → 고개를 들면 눈 덮인 슬로프 꼭대기
 - 연결 요소: 눈매·얼굴형, 어깨 길이 검은 머리(헬멧/고글 밖으로 보이게)
 - 레퍼런스: `references/CHAR_01_*`
 
@@ -44,16 +44,16 @@
 - 장면별 연기
   - SCENE 01: 퇴근길 정류장에서 가방을 멘 채 버스를 기다리며 피곤한 표정으로 폰을 봄 → 동일한 알림음
   - SCENE 02: 알림 확인 후 [참여하기]를 누름
-  - SCENE 03: METABUS 정류장으로 변한 공간에서 버스 탑승
+  - SCENE 03: METABUS 정류장으로 변한 공간에서 도착한 버스를 마주함 (탑승 동작은 생략)
 - 일관성 키워드: `29-year-old Korean office worker man, short slightly messy black hair, dark navy suit, loosened tie, shoulder bag, dark circles`
 
 ### 변신 형태 (스타일라이즈 3D)
 | 형태 | 체험 | 컷 | 모습 |
 |---|---|---|---|
-| 스님 | 산사 | S04_C02 | 회색 승복, 삭발, 염주 |
+| 스님 | 산사 | S04_C01 | 회색 승복, 삭발, 염주 |
 | 레이서 | 카레이싱 | S05_C02 | 레이싱 슈트, 헬멧 |
 | 응원단 관중 | 야구장 | S05_C03 | 응원 유니폼, 응원봉 |
-- 손 공개(S04_C02): 염주를 쥔 손 → 고개를 들면 고요한 산사
+- 손 공개(S04_C01): 염주를 쥔 손 → 고개를 들면 고요한 산사
 - 연결 요소: 눈매·얼굴형 (스님은 삭발이라 헤어로 연결할 수 없음)
 - 레퍼런스: `references/CHAR_02_*`
 
@@ -77,5 +77,4 @@
 - 등장 컷
   - S03_C02: 버스 문이 열리며 경례로 두 사람을 맞이
   - S05_C03: 야구장 관중석에서 두 사람 옆에서 함께 응원
-  - S06_C01: 엔딩 직전 교차 장면
 - 일관성 키워드: `cute cream-colored cat-like mascot, brown patches around eyes, big brown eyes, purple conductor cap with yellow M emblem, purple double-breasted uniform with yellow buttons, yellow scarf, yellow star wand`

@@ -1,0 +1,687 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>metaBus Ending (Three.js + GSAP)</title>
+<!--
+  metaBus 엔딩 모션그래픽 v3 — ending/ending_storybord2.png 기준
+  Three.js(3D·유리 굴절·블룸) + GSAP(타임라인). 렌더: render.mjs (Chrome 한 개로 프레임 캡처)
+
+  사용: index.html?a=16x9|9x16            → 미리보기 (5초 반복 재생, 로컬 서버로 열 것)
+        index.html?a=16x9&t=2.4           → 그 시점 한 프레임
+        index.html?a=16x9&mode=render     → render.mjs 가 window.renderAt(t) 로 프레임마다 호출
+
+  t=0 은 본편 25.0초.
+  E01 0.0–0.8  알림 도착          3/4 Front, Slow Push-in
+  E02 0.8–2.0  유리 초대장 등장    정면, 유리 카드가 떠오르고 궤도 링이 감쌈
+  E03 2.0–3.5  버스와 함께하는 초대 로우 앵글, 버스가 달리며 배경이 펼쳐짐
+  E04 3.5–5.0  브랜드 엔딩        정면 고정, 로고·URL 등장 후 페이드아웃
+
+  GPT 이미지(있으면 사용, 없으면 코드로 그린 임시 그래픽):
+    ../ending_html/assets/e03_bg_<a>.png  e03_bus_<a>.png (투명)  e04_bg_<a>.png
+-->
+<style>
+  html, body { margin: 0; background: #000; overflow: hidden; }
+  #wrap { position: relative; overflow: hidden; }
+  #wrap canvas { display: block; }
+  #flash, #fade { position: absolute; inset: 0; pointer-events: none; opacity: 0; }
+  #flash { background: #F4F2FF; }
+  #fade { background: #000; }
+</style>
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+} }
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+</head>
+<body>
+<div id="wrap"><div id="flash"></div><div id="fade"></div></div>
+
+<script type="module">
+import * as THREE from 'three';
+import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+
+window.addEventListener('error', e => { window.ERR = String(e.message || e); });
+window.addEventListener('unhandledrejection', e => { window.ERR = String(e.reason); });
+
+// ============================================================ 설정
+const Q = new URLSearchParams(location.search);
+const V = Q.get('a') === '9x16';
+const W = V ? 1080 : 1920, H = V ? 1920 : 1080, ASPECT = W / H;
+const MODE = Q.get('mode') || (Q.has('t') ? 'frame' : 'preview');
+const SFX = V ? '9x16' : '16x9';
+const ASSET = '../ending_html/assets/';
+const DATE_TEXT = '11월 16일 일요일';          // 스토리보드 표기 (결정 대기: 2026-11-16은 월요일)
+const FONT_KR = '"Apple SD Gothic Neo", "Noto Sans KR", sans-serif';
+const FONT_UI = '-apple-system, "SF Pro Display", "Helvetica Neue", sans-serif';
+const FONT_WORD = '"Avenir Next", "Futura", sans-serif';
+
+// ============================================================ 유틸
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const lerp = (a, b, k) => a + (b - a) * k;
+function rng(seed) { return () => (seed = (seed * 16807) % 2147483647) / 2147483647; }
+function makeCanvas(w, h) {
+  const c = document.createElement('canvas'); c.width = w; c.height = h;
+  const ctx = c.getContext('2d');
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 8;
+  return { c, ctx, tex };
+}
+function rr(ctx, x, y, w, h, r) { ctx.beginPath(); ctx.roundRect(x, y, w, h, r); }
+function loadImage(src) {
+  return new Promise(res => { const im = new Image(); im.onload = () => res(im); im.onerror = () => res(null); im.src = src; });
+}
+function coverDraw(ctx, im, w, h) {
+  const s = Math.max(w / im.width, h / im.height);
+  ctx.drawImage(im, (w - im.width * s) / 2, (h - im.height * s) / 2, im.width * s, im.height * s);
+}
+
+// m 심볼 (스토리보드 근사: 이탤릭 두 아치, 블루→바이올렛)
+const MARK = new Path2D('M 18 88 L 34 38 Q 42 16 62 20 Q 78 25 70 48 L 57 88 M 70 48 Q 80 18 100 20 Q 118 24 110 48 L 97 88');
+function drawMark(ctx, cx, cy, h, bright = false) {          // bright: 어두운 배경용 밝은 그라데이션
+  const s = h / 100;
+  ctx.save(); ctx.translate(cx - 72.5 * s, cy - 54 * s); ctx.scale(s, s);
+  const g = ctx.createLinearGradient(0, 0, 145, 0);
+  g.addColorStop(0, bright ? '#7FA2FF' : '#4F7BFF'); g.addColorStop(1, bright ? '#B08CFF' : '#8B5CF6');
+  ctx.strokeStyle = g; ctx.lineWidth = 24; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  ctx.stroke(MARK); ctx.restore();
+}
+
+// 둥근 사각형 Shape / 평면 (UV 0~1)
+function rrShape(w, h, r, P = THREE.Shape) {
+  const s = new P(), x = -w / 2, y = -h / 2;
+  s.moveTo(x + r, y); s.lineTo(x + w - r, y); s.quadraticCurveTo(x + w, y, x + w, y + r);
+  s.lineTo(x + w, y + h - r); s.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  s.lineTo(x + r, y + h); s.quadraticCurveTo(x, y + h, x, y + h - r);
+  s.lineTo(x, y + r); s.quadraticCurveTo(x, y, x + r, y);
+  return s;
+}
+function rrPlane(w, h, r) {
+  const g = new THREE.ShapeGeometry(rrShape(w, h, r), 12);
+  const p = g.attributes.position, uv = g.attributes.uv;
+  for (let i = 0; i < p.count; i++) uv.setXY(i, (p.getX(i) + w / 2) / w, (p.getY(i) + h / 2) / h);
+  return g;
+}
+function rrRing(w, h, r, t) {
+  const s = rrShape(w, h, r);
+  s.holes.push(rrShape(w - 2 * t, h - 2 * t, Math.max(r - t, .001), THREE.Path));
+  return new THREE.ShapeGeometry(s, 12);
+}
+
+// 부드러운 빛망울 / 별 / 구름 텍스처
+const dotCache = {};
+function softDot(rgb) {
+  if (dotCache[rgb]) return dotCache[rgb];
+  const { ctx, tex } = makeCanvas(128, 128);
+  const g = ctx.createRadialGradient(64, 64, 0, 64, 64, 64);
+  g.addColorStop(0, `rgba(${rgb},.9)`); g.addColorStop(.55, `rgba(${rgb},.38)`); g.addColorStop(1, `rgba(${rgb},0)`);
+  ctx.fillStyle = g; ctx.fillRect(0, 0, 128, 128);
+  return (dotCache[rgb] = tex);
+}
+const STAR = (() => {
+  const { ctx, tex } = makeCanvas(256, 256);
+  const g = ctx.createRadialGradient(128, 128, 0, 128, 128, 90);
+  g.addColorStop(0, 'rgba(225,232,255,.9)'); g.addColorStop(1, 'rgba(225,232,255,0)');
+  ctx.fillStyle = g; ctx.fillRect(0, 0, 256, 256);
+  ctx.fillStyle = '#fff'; ctx.beginPath();
+  [[0, -110], [9, -9], [110, 0], [9, 9], [0, 110], [-9, 9], [-110, 0], [-9, -9]].forEach(([x, y], i) =>
+    i ? ctx.lineTo(128 + x, 128 + y) : ctx.moveTo(128 + x, 128 + y));
+  ctx.fill();
+  return tex;
+})();
+const CLOUD = (() => {
+  const { ctx, tex } = makeCanvas(512, 320), r = rng(21);
+  ctx.filter = 'blur(14px)';
+  for (let i = 0; i < 26; i++) {
+    const x = 70 + r() * 370, y = 140 + r() * 120 - Math.sin((x - 70) / 370 * Math.PI) * 90, s = 40 + r() * 70;
+    const g = ctx.createRadialGradient(x, y, 0, x, y, s);
+    g.addColorStop(0, 'rgba(250,246,255,.95)'); g.addColorStop(.7, 'rgba(226,214,255,.7)'); g.addColorStop(1, 'rgba(210,196,255,0)');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, s, 0, Math.PI * 2); ctx.fill();
+  }
+  return tex;
+})();
+
+function addBokeh(group, seed, n, sx, sy) {
+  const r = rng(seed), cols = ['255,214,190', '255,232,210', '190,200,255', '214,198,255', '255,255,255', '160,170,240'];
+  const arr = [];
+  for (let i = 0; i < n; i++) {
+    const sp = new THREE.Sprite(new THREE.SpriteMaterial({
+      map: softDot(cols[Math.floor(r() * cols.length)]), transparent: true, depthWrite: false, opacity: .35 + r() * .45 }));
+    const z = -2 - r() * 7, far = 1 + (-z) * .22;
+    sp.scale.setScalar((.35 + r() * .9) * far);
+    sp.position.set((r() - .5) * sx * far, (r() - .5) * sy * far, z);
+    sp.userData = { x: sp.position.x, y: sp.position.y, d: r() };
+    group.add(sp); arr.push(sp);
+  }
+  return arr;
+}
+function driftBokeh(arr, t, amt) {
+  arr.forEach(sp => { const d = sp.userData.d; sp.position.x = sp.userData.x + (d - .5) * amt * t; sp.position.y = sp.userData.y - d * amt * .4 * t; });
+}
+function addStars(parent, pts) {
+  return pts.map(([x, y, z, s, t0]) => {
+    const m = new THREE.SpriteMaterial({ map: STAR, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false });
+    m.color.setScalar(1.5);
+    const sp = new THREE.Sprite(m); sp.position.set(x, y, z); sp.userData = { s, t0 };
+    parent.add(sp); return sp;
+  });
+}
+function twinkle(arr, t) {
+  arr.forEach(sp => {
+    const { s, t0 } = sp.userData, k = clamp((t - t0) / .25);
+    sp.material.opacity = k * (.6 + .4 * Math.sin((t - t0) * 9));
+    sp.scale.setScalar(s * (.6 + .4 * k));
+  });
+}
+
+// 궤도 링: XZ 평면 타원 튜브 (그룹을 기울이면 위쪽은 뒤, 아래쪽은 앞을 지나며 깊이 정렬은 3D가 처리)
+class Ellipse3 extends THREE.Curve {
+  constructor(rx, rz, start) { super(); this.rx = rx; this.rz = rz; this.start = start; }
+  getPoint(t, o = new THREE.Vector3()) { const a = this.start + t * Math.PI * 2; return o.set(Math.cos(a) * this.rx, 0, Math.sin(a) * this.rz); }
+}
+function makeOrbit(rx, rz, start, core = .007) {
+  const g = new THREE.Group(), curve = new Ellipse3(rx, rz, start);
+  const coreM = new THREE.Mesh(new THREE.TubeGeometry(curve, 600, core, 6, true),
+    new THREE.MeshBasicMaterial({ color: new THREE.Color(2.4, 2.5, 3.3), toneMapped: false, transparent: true }));
+  const halo = new THREE.Mesh(new THREE.TubeGeometry(curve, 600, core * 4.5, 6, true),
+    new THREE.MeshBasicMaterial({ color: new THREE.Color(.5, .55, 1.3), toneMapped: false, transparent: true, opacity: .4,
+      blending: THREE.AdditiveBlending, depthWrite: false }));
+  g.add(halo, coreM);
+  return {
+    g, set(k) {
+      for (const m of [coreM, halo]) { const n = m.geometry.index.count; m.geometry.setDrawRange(0, Math.floor(n * clamp(k) / 6) * 6); }
+      g.visible = k > .001;
+    }
+  };
+}
+
+// ============================================================ 렌더러
+const wrap = document.getElementById('wrap');
+wrap.style.width = W + 'px'; wrap.style.height = H + 'px';
+const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+renderer.setPixelRatio(1); renderer.setSize(W, H);
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.NeutralToneMapping; renderer.toneMappingExposure = 1.0;
+wrap.prepend(renderer.domElement);
+
+const scene = new THREE.Scene();
+const pmrem = new THREE.PMREMGenerator(renderer);
+scene.environment = pmrem.fromScene(new RoomEnvironment(), .04).texture;
+const camera = new THREE.PerspectiveCamera(30, ASPECT, .05, 400);
+scene.add(camera);
+const key = new THREE.DirectionalLight(0xfff1e6, 1.6); key.position.set(-3, 4, 5); scene.add(key);
+scene.add(new THREE.AmbientLight(0xc8c4ff, .5));
+
+const composer = new EffectComposer(renderer, new THREE.WebGLRenderTarget(W, H, { type: THREE.HalfFloatType, samples: 4 }));
+composer.addPass(new RenderPass(scene, camera));
+const bloom = new UnrealBloomPass(new THREE.Vector2(W, H), .55, .45, .98);
+composer.addPass(bloom);
+composer.addPass(new OutputPass());
+
+// 화면 비율에 맞춰 frame(w,h 단위)이 dist 거리에서 꽉 차도록 세로 시야각 계산
+function fitFov(fw, fh, dist) {
+  const vh = Math.max(fh, fw / ASPECT);
+  return THREE.MathUtils.radToDeg(2 * Math.atan(vh / 2 / dist));
+}
+// 지평선을 화면 위에서 frac 지점에 두는 피치
+function pitchFor(frac) { return Math.atan((2 * frac - 1) * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2))); }
+
+// ============================================================ 배경 (화면 고정 텍스처, repeat/offset으로 줌)
+function bgCanvas(draw) { const cv = makeCanvas(W, H); draw(cv.ctx, W, H); cv.tex.needsUpdate = true; return cv.tex; }
+function zoomBg(tex, z, px = 0, py = 0) {
+  tex.repeat.set(1 / z, 1 / z); tex.offset.set((1 - 1 / z) / 2 + px, (1 - 1 / z) / 2 + py);
+}
+function duskGradient(ctx, w, h) {
+  const g = ctx.createLinearGradient(0, 0, 0, h);
+  g.addColorStop(0, '#4E4FB0'); g.addColorStop(.45, '#7C78D4'); g.addColorStop(.75, '#B7A6EC'); g.addColorStop(1, '#EBC3DF');
+  ctx.fillStyle = g; ctx.fillRect(0, 0, w, h);
+  [[.2, .85, .6, '255,205,180', .5], [.85, .75, .5, '255,190,220', .4]].forEach(([x, y, s, c, a]) => {
+    const rg = ctx.createRadialGradient(x * w, y * h, 0, x * w, y * h, s * w);
+    rg.addColorStop(0, `rgba(${c},${a})`); rg.addColorStop(1, `rgba(${c},0)`); ctx.fillStyle = rg; ctx.fillRect(0, 0, w, h);
+  });
+}
+
+// ============================================================ 폰
+const PW = 1, PH = 2.13;
+const LOCK = makeCanvas(1000, 2130);
+function drawLock(banner, glow) {
+  const ctx = LOCK.ctx, w = 1000, h = 2130;
+  const g = ctx.createLinearGradient(0, 0, 0, h);
+  g.addColorStop(0, '#8C88D8'); g.addColorStop(.42, '#6764BE'); g.addColorStop(1, '#3B3E86');
+  ctx.fillStyle = g; ctx.fillRect(0, 0, w, h);
+  [[250, 1550, 650, '255,190,220', .22], [780, 650, 520, '200,215,255', .25]].forEach(([x, y, s, c, a]) => {
+    const rg = ctx.createRadialGradient(x, y, 0, x, y, s); rg.addColorStop(0, `rgba(${c},${a})`); rg.addColorStop(1, `rgba(${c},0)`);
+    ctx.fillStyle = rg; ctx.fillRect(0, 0, w, h);
+  });
+  ctx.fillStyle = '#050508'; rr(ctx, 350, 40, 300, 66, 33); ctx.fill();
+  ctx.fillStyle = '#fff';                                  // 상태바
+  for (let i = 0; i < 4; i++) { rr(ctx, 712 + i * 15, 92 - i * 7, 10, 12 + i * 7, 3); ctx.fill(); }
+  ctx.strokeStyle = 'rgba(255,255,255,.6)'; ctx.lineWidth = 3; rr(ctx, 800, 66, 70, 34, 10); ctx.stroke();
+  rr(ctx, 805, 71, 56, 24, 6); ctx.fill();
+  ctx.textAlign = 'center'; ctx.fillStyle = 'rgba(255,255,255,.96)';
+  ctx.font = `300 300px ${FONT_UI}`; ctx.fillText('9:41', 500, 560);
+  ctx.font = `500 54px ${FONT_KR}`; ctx.fillStyle = 'rgba(255,255,255,.9)'; ctx.fillText(DATE_TEXT, 500, 672);
+  if (glow > 0) {
+    const gg = ctx.createRadialGradient(500, 1060, 0, 500, 1060, 720);
+    gg.addColorStop(0, `rgba(222,228,255,${.7 * glow})`); gg.addColorStop(1, 'rgba(222,228,255,0)');
+    ctx.fillStyle = gg; ctx.fillRect(0, 0, w, h);
+  }
+  if (banner > 0) {
+    const b = clamp(banner), y = 880 - (1 - b) * 70, s = lerp(.92, 1, b);
+    ctx.save(); ctx.globalAlpha = b;
+    ctx.translate(500, y + 130); ctx.scale(s, s); ctx.translate(-500, -(y + 130));
+    ctx.shadowColor = 'rgba(40,40,120,.28)'; ctx.shadowBlur = 44; ctx.shadowOffsetY = 12;
+    ctx.fillStyle = 'rgba(243,241,253,.9)'; rr(ctx, 50, y, 900, 260, 72); ctx.fill();
+    ctx.shadowColor = 'transparent';
+    const ig = ctx.createLinearGradient(90, y + 50, 250, y + 210); ig.addColorStop(0, '#2C3290'); ig.addColorStop(1, '#151852');
+    ctx.fillStyle = ig; rr(ctx, 90, y + 50, 160, 160, 40); ctx.fill();
+    drawMark(ctx, 170, y + 134, 78);
+    ctx.textAlign = 'left'; ctx.fillStyle = '#15173A'; ctx.font = `700 56px ${FONT_UI}`; ctx.fillText('metaBus', 290, y + 112);
+    ctx.textAlign = 'right'; ctx.fillStyle = '#6A6C8C'; ctx.font = `400 38px ${FONT_KR}`; ctx.fillText('지금', 905, y + 108);
+    ctx.textAlign = 'left'; ctx.fillStyle = '#2E3052'; ctx.font = `500 39px ${FONT_KR}`; ctx.fillText('새로운 경험이 기다리고 있습니다.', 290, y + 186);
+    ctx.restore();
+  }
+  LOCK.tex.needsUpdate = true;
+}
+const DIM = makeCanvas(500, 1065);
+(() => {
+  const ctx = DIM.ctx, g = ctx.createLinearGradient(0, 0, 0, 1065);
+  g.addColorStop(0, '#6E6BC0'); g.addColorStop(1, '#2B2E6E'); ctx.fillStyle = g; ctx.fillRect(0, 0, 500, 1065);
+  ctx.fillStyle = '#050508'; rr(ctx, 175, 20, 150, 33, 16); ctx.fill(); DIM.tex.needsUpdate = true;
+})();
+function makePhone(screenTex) {
+  const g = new THREE.Group();
+  const body = new THREE.Mesh(new RoundedBoxGeometry(PW + .07, PH + .07, .1, 8, .15),
+    new THREE.MeshPhysicalMaterial({ color: 0x3a3d4e, metalness: .9, roughness: .26, clearcoat: .7, clearcoatRoughness: .2 }));
+  const bezel = new THREE.Mesh(rrPlane(PW + .03, PH + .03, .14), new THREE.MeshBasicMaterial({ color: 0x07070c }));
+  bezel.position.z = .0505;
+  const scr = new THREE.Mesh(rrPlane(PW - .02, PH - .02, .12), new THREE.MeshBasicMaterial({ map: screenTex, toneMapped: false }));
+  scr.position.z = .052;
+  [[.6, .2], [.32, .12], [.1, .12]].forEach(([y, h], i) => {          // 측면 버튼
+    const b = new THREE.Mesh(new RoundedBoxGeometry(.025, h, .05, 2, .01), body.material);
+    b.position.set(i ? -(PW / 2 + .045) : PW / 2 + .045, y, 0); g.add(b);
+  });
+  g.add(body, bezel, scr);
+  return { g, scr };
+}
+
+// ============================================================ 유리 카드
+function makeCard(w, h, draw) {
+  const g = new THREE.Group();
+  const glass = new THREE.Mesh(new RoundedBoxGeometry(w, h, .07, 6, .1), new THREE.MeshPhysicalMaterial({
+    color: 0xeef0ff, metalness: 0, roughness: .42, transmission: 1, thickness: .9, ior: 1.45,
+    clearcoat: 1, clearcoatRoughness: .04, iridescence: .4, iridescenceIOR: 1.3,
+    attenuationColor: new THREE.Color(0xd2d4ff), attenuationDistance: 3, transparent: true, envMapIntensity: 1.3 }));
+  const edge = new THREE.Mesh(rrRing(w + .014, h + .014, .108, .011),
+    new THREE.MeshBasicMaterial({ color: new THREE.Color(1.7, 1.8, 2.3), toneMapped: false, transparent: true }));
+  edge.position.z = .037;
+  const cv = makeCanvas(Math.round(w * 1000), Math.round(h * 1000));
+  const content = new THREE.Mesh(rrPlane(w, h, .1),
+    new THREE.MeshBasicMaterial({ map: cv.tex, transparent: true, toneMapped: false, depthWrite: false }));
+  content.position.z = .038;
+  g.add(glass, edge, content);
+  const card = { g, glass, edge, content, cv, w, h };
+  card.draw = sheen => { draw(cv.ctx, cv.c.width, cv.c.height, sheen); cv.tex.needsUpdate = true; };
+  card.opacity = a => { glass.material.opacity = a; edge.material.opacity = a; content.material.opacity = a; g.visible = a > .001; };
+  return card;
+}
+function sheenStripe(ctx, w, h, s) {
+  if (s <= -1 || s >= 1.4) return;
+  const x = lerp(-.4, 1.4, (s + 1) / 2.4) * w;
+  const g = ctx.createLinearGradient(x - w * .3, 0, x + w * .3, h * .5);
+  g.addColorStop(0, 'rgba(255,255,255,0)'); g.addColorStop(.5, 'rgba(255,255,255,.22)'); g.addColorStop(1, 'rgba(255,255,255,0)');
+  ctx.fillStyle = g; rr(ctx, 0, 0, w, h, 100); ctx.fill();
+}
+function drawInvite(ctx, w, h, sheen) {
+  ctx.clearRect(0, 0, w, h);
+  sheenStripe(ctx, w, h, sheen);
+  ctx.save();
+  ctx.shadowColor = 'rgba(40,40,150,.35)'; ctx.shadowBlur = 24;
+  drawMark(ctx, w / 2, 255, 165);
+  ctx.textAlign = 'center'; ctx.fillStyle = '#F4F5FF';
+  ctx.font = `500 150px ${FONT_WORD}`; ctx.fillText('metaBus', w / 2, 505);
+  ctx.restore();
+  const dg = ctx.createLinearGradient(200, 0, w - 200, 0);
+  dg.addColorStop(0, 'rgba(255,255,255,0)'); dg.addColorStop(.5, 'rgba(255,255,255,.85)'); dg.addColorStop(1, 'rgba(255,255,255,0)');
+  ctx.fillStyle = dg; ctx.fillRect(200, 575, w - 400, 3);
+  ctx.save(); ctx.shadowColor = 'rgba(40,40,150,.35)'; ctx.shadowBlur = 20;
+  ctx.textAlign = 'center'; ctx.fillStyle = '#F4F5FF'; ctx.font = `500 96px ${FONT_KR}`;
+  ctx.fillText('새로운 경험이', w / 2, 745); ctx.fillText('기다리고 있습니다.', w / 2, 880);
+  ctx.restore();
+  ctx.save();
+  ctx.shadowColor = 'rgba(90,100,255,.6)'; ctx.shadowBlur = 50; ctx.shadowOffsetY = 14;
+  const bg = ctx.createLinearGradient(260, 0, w - 260, 0); bg.addColorStop(0, '#5A72FF'); bg.addColorStop(1, '#7C5CF6');
+  ctx.fillStyle = bg; rr(ctx, 260, 990, w - 520, 175, 88); ctx.fill();
+  ctx.shadowColor = 'transparent';
+  ctx.fillStyle = 'rgba(255,255,255,.25)'; rr(ctx, 290, 996, w - 580, 4, 2); ctx.fill();
+  ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.font = `600 78px ${FONT_KR}`; ctx.fillText('참여하기', w / 2, 1105);
+  ctx.font = `300 96px ${FONT_UI}`; ctx.fillText('›', w - 345, 1110);
+  ctx.restore();
+}
+function drawMarkCard(ctx, w, h, sheen) {
+  ctx.clearRect(0, 0, w, h); sheenStripe(ctx, w, h, sheen);
+  ctx.save(); ctx.shadowColor = 'rgba(60,60,170,.4)'; ctx.shadowBlur = 30; drawMark(ctx, w / 2, h / 2 + 20, h * .55); ctx.restore();
+}
+
+// ============================================================ E01 알림 도착
+const G1 = new THREE.Group(); scene.add(G1);
+const BG1 = bgCanvas(duskGradient);
+const B1 = addBokeh(G1, 7, 30, 9, 5.5);
+const phone1 = makePhone(LOCK.tex); G1.add(phone1.g);
+const ding = (() => {
+  const { ctx, tex } = makeCanvas(256, 256);
+  ctx.strokeStyle = '#fff'; ctx.lineWidth = 16; ctx.lineCap = 'round';
+  [200, 225, 250].forEach(a => {                    // 왼쪽 위로 퍼지는 세 줄
+    const c = Math.cos(a * Math.PI / 180), s = Math.sin(a * Math.PI / 180);
+    ctx.beginPath(); ctx.moveTo(190 + c * 40, 190 + s * 40); ctx.lineTo(190 + c * 130, 190 + s * 130); ctx.stroke();
+  });
+  const m = new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false, toneMapped: false });
+  m.color.setScalar(1.3);
+  const sp = new THREE.Sprite(m); G1.add(sp); return sp;
+})();
+const E1 = V
+  ? { phone: [0, -.12, 0], rot: [-.1, -.36, -.1], cam: [0, .15, 5.0], push: .45, look: [0, .05, 0], frame: [1.45, 2.5], ding: [-.48, 1.08, .25] }
+  : { phone: [.12, -.42, 0], rot: [-.14, -.4, -.14], cam: [0, .2, 4.6], push: .4, look: [.05, .05, 0], frame: [3.3, 1.86], ding: [-.46, .6, .25] };
+
+// ============================================================ E02 유리 초대장
+const G2 = new THREE.Group(); scene.add(G2);
+const BG2 = bgCanvas(duskGradient);
+const B2 = addBokeh(G2, 11, 24, 10, 6);
+const phone2 = makePhone(DIM.tex); G2.add(phone2.g);
+phone2.g.position.set(.05, .35, -1.4); phone2.g.scale.setScalar(2.05); phone2.g.rotation.set(0, -.12, .06);
+const invite = makeCard(1.5, 1.38, drawInvite); G2.add(invite.g);
+const orbit2 = makeOrbit(1.3, .74, -.35); G2.add(orbit2.g);
+const stars2 = addStars(G2, [[-1.05, .78, .7, .26, 1.3], [1.12, .05, .9, .3, 1.45], [-.9, -.9, .9, .2, 1.6], [.72, 1.0, .5, .17, 1.7]]);
+const E2 = { cardZ: .6, camDist: V ? 6.1 : 4.6 };
+
+// ============================================================ E03 버스와 함께하는 초대
+const G3 = new THREE.Group(); scene.add(G3);
+let BG3;                                            // 이미지 또는 코드 배경
+function drawCity(ctx, w, h) {
+  const hz = h * (V ? .66 : .62), r = rng(5);
+  const g = ctx.createLinearGradient(0, 0, 0, hz);
+  g.addColorStop(0, '#5B5DC6'); g.addColorStop(.45, '#9A8DE4'); g.addColorStop(.8, '#E6B6D6'); g.addColorStop(1, '#F6D3CC');
+  ctx.fillStyle = g; ctx.fillRect(0, 0, w, h);
+  const sun = ctx.createRadialGradient(w * .32, hz, 0, w * .32, hz, w * .55);
+  sun.addColorStop(0, 'rgba(255,226,200,.75)'); sun.addColorStop(1, 'rgba(255,226,200,0)'); ctx.fillStyle = sun; ctx.fillRect(0, 0, w, h);
+  ctx.save(); ctx.filter = 'blur(26px)';            // 구름
+  for (let i = 0; i < 22; i++) {
+    const x = r() * w, y = hz * (.25 + r() * .55), s = w * (.04 + r() * .07);
+    ctx.fillStyle = `rgba(${r() > .5 ? '255,236,246' : '236,226,255'},${.45 + r() * .4})`;
+    ctx.beginPath(); ctx.ellipse(x, y, s * 2.2, s, 0, 0, Math.PI * 2); ctx.fill();
+  }
+  ctx.restore();
+  const tower = (x, tw, th, col, rim, plat) => {     // 타워 + 원형 플랫폼
+    ctx.fillStyle = col; rr(ctx, x - tw / 2, hz - th, tw, th, [tw * .45, tw * .45, 0, 0]); ctx.fill();
+    ctx.fillRect(x - 1.5, hz - th - tw * 1.4, 3, tw * 1.4);
+    ctx.fillStyle = rim; ctx.fillRect(x - tw * .32, hz - th * .9, 2, th * .85); ctx.fillRect(x + tw * .28, hz - th * .9, 2, th * .85);
+    if (plat) {
+      const py = hz - th * plat;
+      ctx.fillStyle = col; ctx.beginPath(); ctx.ellipse(x, py, tw * 2.4, tw * .38, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = 'rgba(160,190,255,.9)'; ctx.lineWidth = 3; ctx.beginPath(); ctx.ellipse(x, py + 3, tw * 2.4, tw * .38, 0, 0, Math.PI); ctx.stroke();
+    }
+  };
+  for (let i = 0; i < 26; i++) tower(r() * w, w * (.012 + r() * .02), hz * (.12 + r() * .3), 'rgba(176,164,232,.75)', 'rgba(200,215,255,.5)', 0);
+  [[.06, .05, .62, .55], [.16, .035, .42, .7], [.86, .05, .58, .5], [.95, .04, .7, .62], [.76, .03, .36, .0]].forEach(([x, tw, th, p]) =>
+    tower(x * w, tw * w, th * hz, '#E9E5FF', 'rgba(120,150,255,.75)', p));
+  const haze = ctx.createLinearGradient(0, hz - h * .12, 0, hz);
+  haze.addColorStop(0, 'rgba(248,214,226,0)'); haze.addColorStop(1, 'rgba(248,214,226,.85)');
+  ctx.fillStyle = haze; ctx.fillRect(0, hz - h * .12, w, h * .12);
+  const rd = ctx.createLinearGradient(0, hz, 0, h); rd.addColorStop(0, '#CDB7E8'); rd.addColorStop(1, '#6E66C4');
+  ctx.fillStyle = rd; ctx.fillRect(0, hz, w, h - hz);
+}
+const road = new THREE.Mesh(new THREE.PlaneGeometry(400, 60),
+  new THREE.MeshPhysicalMaterial({ color: 0x8f86da, metalness: .35, roughness: .22, clearcoat: 1, clearcoatRoughness: .1 }));
+road.rotation.x = -Math.PI / 2; road.position.set(0, -1.04, -20); G3.add(road);
+const laneMat = new THREE.MeshBasicMaterial({ color: new THREE.Color(.9, 1.0, 1.8), toneMapped: false });
+[2.3, -2.3].forEach(z => { const l = new THREE.Mesh(new THREE.BoxGeometry(400, .01, .035), laneMat); l.position.set(0, -1.03, z); G3.add(l); });
+const streak = new THREE.Mesh(new THREE.BoxGeometry(3.5, .012, .045),
+  new THREE.MeshBasicMaterial({ color: new THREE.Color(2.2, 2.4, 3.4), toneMapped: false, transparent: true }));
+streak.position.set(0, -1.02, 1.4); G3.add(streak);
+
+function makeBus() {                                 // 코드 버스 (GPT 버스 이미지가 없을 때)
+  const g = new THREE.Group();
+  const pearl = new THREE.MeshPhysicalMaterial({ color: 0xd9d8ea, metalness: .1, roughness: .3, clearcoat: 1, clearcoatRoughness: .08, envMapIntensity: .55 });
+  const glassM = new THREE.MeshPhysicalMaterial({ color: 0x0c0f30, metalness: 0, roughness: .18, envMapIntensity: .15 });
+  const hub = new THREE.MeshStandardMaterial({ color: 0x9a9ab4, metalness: .6, roughness: .35, envMapIntensity: .5 });
+  const led = new THREE.MeshBasicMaterial({ color: new THREE.Color(.8, 1.3, 3.2), toneMapped: false });
+  const lamp = new THREE.MeshBasicMaterial({ color: new THREE.Color(3, 3, 3.2), toneMapped: false });
+  const dark = new THREE.MeshStandardMaterial({ color: 0x1b1c26, roughness: .6 });
+  const add = (geo, mat, x, y, z, rx = 0, ry = 0, rz = 0) => { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); m.rotation.set(rx, ry, rz); g.add(m); return m; };
+  add(new RoundedBoxGeometry(4.4, 1.45, 1.6, 8, .55), pearl, 0, 0, 0);
+  add(new RoundedBoxGeometry(3.7, .52, 1.63, 6, .2), glassM, .2, .24, 0);                // 측면 창 띠
+  add(new RoundedBoxGeometry(.5, 1.0, 1.5, 6, .22), glassM, -1.98, .14, 0);              // 앞 유리 (감싸는 형태)
+  [.81, -.81].forEach(z => {
+    add(new THREE.BoxGeometry(3.9, .03, .02), led, .1, -.46, z);                         // 하단 LED
+    add(new THREE.BoxGeometry(.03, .72, .02), led, -1.83, .18, z * 1.002);               // 앞 기둥 LED
+  });
+  [.42, -.42].forEach(z => add(new THREE.BoxGeometry(.02, .045, .42), lamp, -2.205, -.26, z));
+  [[1.42, .76], [1.42, -.76], [-1.32, .76], [-1.32, -.76]].forEach(([x, z]) => {
+    add(new THREE.CylinderGeometry(.32, .32, .24, 32), dark, x, -.72, z, Math.PI / 2);
+    add(new THREE.CylinderGeometry(.19, .19, .25, 24), hub, x, -.72, z, Math.PI / 2);
+  });
+  const side = makeCanvas(1400, 300);
+  side.ctx.fillStyle = '#1C2060'; side.ctx.textAlign = 'center'; side.ctx.font = `600 190px ${FONT_WORD}`;
+  side.ctx.fillText('metaBus', 700, 220); side.tex.needsUpdate = true;
+  add(new THREE.PlaneGeometry(1.4, .3), new THREE.MeshBasicMaterial({ map: side.tex, transparent: true }), .55, -.15, .803);
+  const fr = makeCanvas(256, 200); drawMark(fr.ctx, 128, 100, 120); fr.tex.needsUpdate = true;
+  add(new THREE.PlaneGeometry(.32, .25), new THREE.MeshBasicMaterial({ map: fr.tex, transparent: true, toneMapped: false }), -2.226, -.05, 0, 0, -Math.PI / 2);
+  return g;
+}
+const bus3d = makeBus(); G3.add(bus3d);
+let busImg = null;                                   // GPT 버스 이미지 평면
+const skyCard = makeCard(1.1, .8, drawMarkCard); camera.add(skyCard.g);
+const E3 = V
+  ? { cam: [-4.6, .12, 8.6], look: [.2, .12, 0], fov: 50, hz: .66, busFrom: 10, busTo: .3, sky: [.5, 1.85, -6], skyS: .95 }
+  : { cam: [-4.8, .1, 6.6], look: [.6, .1, 0], fov: 32, hz: .62, busFrom: 11, busTo: .9, sky: [1.25, .72, -5], skyS: 1 };
+
+// ============================================================ E04 브랜드 엔딩
+const G4 = new THREE.Group(); scene.add(G4);
+let BG4;
+function drawNight(ctx, w, h) {
+  const g = ctx.createLinearGradient(0, 0, 0, h);
+  g.addColorStop(0, '#1C2068'); g.addColorStop(.45, '#353BA0'); g.addColorStop(.8, '#7570D2'); g.addColorStop(1, '#B3A3EE');
+  ctx.fillStyle = g; ctx.fillRect(0, 0, w, h);
+  const r = rng(33);
+  for (let i = 0; i < 140; i++) {
+    const x = r() * w, y = r() * h * .65, s = .6 + r() * 1.8;
+    ctx.fillStyle = `rgba(255,255,255,${.25 + r() * .6})`; ctx.beginPath(); ctx.arc(x, y, s, 0, Math.PI * 2); ctx.fill();
+  }
+}
+const proc4 = new THREE.Group(); G4.add(proc4);       // 이미지가 없을 때만 보이는 행성·구름
+const planet = new THREE.Mesh(new THREE.SphereGeometry(40, 128, 96), new THREE.ShaderMaterial({
+  vertexShader: `varying vec3 vN; varying vec3 vV;
+    void main(){ vec4 wp = modelMatrix*vec4(position,1.); vN = normalize(mat3(modelMatrix)*normal); vV = normalize(cameraPosition-wp.xyz); gl_Position = projectionMatrix*viewMatrix*wp; }`,
+  fragmentShader: `varying vec3 vN; varying vec3 vV;
+    void main(){ float f = pow(1.-max(dot(vN,vV),0.), 14.);
+      vec3 base = mix(vec3(.07,.07,.24), vec3(.22,.2,.55), smoothstep(.985,1.,vN.y));
+      gl_FragColor = vec4(base + vec3(.7,.75,1.9)*f*3.2, 1.); }`
+}));
+proc4.add(planet);
+const atmo = new THREE.Mesh(new THREE.SphereGeometry(40.6, 128, 96), new THREE.ShaderMaterial({
+  side: THREE.BackSide, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false,
+  vertexShader: `varying vec3 vN; varying vec3 vV;
+    void main(){ vec4 wp = modelMatrix*vec4(position,1.); vN = normalize(mat3(modelMatrix)*normal); vV = normalize(cameraPosition-wp.xyz); gl_Position = projectionMatrix*viewMatrix*wp; }`,
+  fragmentShader: `varying vec3 vN; varying vec3 vV;
+    void main(){ float f = pow(max(dot(vN,vV),0.), 10.); gl_FragColor = vec4(vec3(.55,.6,1.5)*f*.9, f); }`
+}));
+proc4.add(atmo);
+const clouds4 = [[-1, 1], [1, -1], [-1, .7], [1, .8]].map(([side, s], i) => {
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: CLOUD, transparent: true, depthWrite: false, opacity: .95 }));
+  sp.userData = { side, i }; proc4.add(sp); return sp;
+});
+const LOGO = makeCanvas(2000, 760);
+(() => {
+  const ctx = LOGO.ctx;
+  ctx.save(); ctx.shadowColor = 'rgba(150,160,255,.55)'; ctx.shadowBlur = 50;
+  drawMark(ctx, 1000, 190, 230, true);
+  ctx.textAlign = 'center'; ctx.fillStyle = '#F6F6FF'; ctx.font = `500 250px ${FONT_WORD}`; ctx.fillText('metaBus', 1000, 590);
+  ctx.restore(); LOGO.tex.needsUpdate = true;
+})();
+const URL_C = makeCanvas(1200, 160);
+(() => {
+  const ctx = URL_C.ctx; ctx.letterSpacing = '10px';
+  ctx.textAlign = 'center'; ctx.fillStyle = '#EEEBFF'; ctx.font = `400 96px ${FONT_UI}`; ctx.fillText('metabus.app', 600, 115);
+  URL_C.tex.needsUpdate = true;
+})();
+const logoMesh = new THREE.Mesh(new THREE.PlaneGeometry(1, .38), new THREE.MeshBasicMaterial({ map: LOGO.tex, transparent: true, toneMapped: false, depthWrite: false }));
+const urlMesh = new THREE.Mesh(new THREE.PlaneGeometry(1, .1333), new THREE.MeshBasicMaterial({ map: URL_C.tex, transparent: true, toneMapped: false, depthWrite: false }));
+G4.add(logoMesh, urlMesh);
+const orbit4 = makeOrbit(V ? 1.5 : 2.9, V ? 1.7 : 1.95, -.6, .008); G4.add(orbit4.g);
+const stars4 = addStars(G4, V
+  ? [[-1.0, 1.9, .3, .3, 3.75], [1.05, 1.3, .3, .26, 3.9], [.85, -.75, .3, .2, 4.05]]
+  : [[-2.3, .95, .3, .32, 3.75], [2.45, 1.35, .3, .26, 3.9], [1.85, -.7, .3, .2, 4.05]]);
+const E4 = V ? { dist: 8, fov: 44, logoW: 2.5, logoY: .45 } : { dist: 8, fov: 30, logoW: 3.3, logoY: .2 };
+
+// ============================================================ GSAP 타임라인 (상태값만 움직이고, 화면은 renderAt에서 그림)
+const S = { push: 0, banner: 0, glow: 0, ding: 0, card: 0, ring: 0, sheen: -1, z2: 0, bus: 0, cam3: 0, sky: 0, skySheen: -1,
+  logo: 0, url: 0, ring4: 0, z4: 0, flash: 0, fade: 0 };
+const tl = gsap.timeline({ paused: true })
+  // E01
+  .fromTo(S, { push: 0 }, { push: 1, duration: .8, ease: 'sine.inOut' }, 0)
+  .fromTo(S, { banner: 0 }, { banner: 1, duration: .28, ease: 'back.out(1.7)' }, .06)
+  .fromTo(S, { glow: 0 }, { glow: 1, duration: .26, ease: 'power3.out' }, .1)
+  .fromTo(S, { ding: 0 }, { ding: 1, duration: .16, ease: 'power3.out' }, .14)
+  .to(S, { ding: 0, duration: .24, ease: 'power2.in' }, .54)
+  // E02
+  .fromTo(S, { card: 0 }, { card: 1, duration: .6, ease: 'power3.out' }, .84)
+  .fromTo(S, { ring: 0 }, { ring: 1, duration: .62, ease: 'power2.out' }, 1.02)
+  .fromTo(S, { sheen: -1 }, { sheen: 1.4, duration: .7, ease: 'sine.inOut' }, 1.22)
+  .fromTo(S, { z2: 0 }, { z2: 1, duration: 1.2, ease: 'none' }, .8)
+  .fromTo(S, { flash: 0 }, { flash: .85, duration: .18, ease: 'power2.in' }, 1.82)
+  .fromTo(S, { flash: .7 }, { flash: 0, duration: .26, ease: 'power2.out', immediateRender: false }, 2.0)
+  // E03
+  .fromTo(S, { bus: 0 }, { bus: 1, duration: 1.4, ease: 'power3.out' }, 2.0)
+  .fromTo(S, { cam3: 0 }, { cam3: 1, duration: 1.5, ease: 'none' }, 2.0)
+  .fromTo(S, { sky: 0 }, { sky: 1, duration: .55, ease: 'power3.out' }, 2.15)
+  .fromTo(S, { skySheen: -1 }, { skySheen: 1.4, duration: .7, ease: 'sine.inOut' }, 2.55)
+  .fromTo(S, { flash: 0 }, { flash: .6, duration: .12, ease: 'power2.in', immediateRender: false }, 3.38)
+  .fromTo(S, { flash: .55 }, { flash: 0, duration: .26, ease: 'power2.out', immediateRender: false }, 3.5)
+  // E04
+  .fromTo(S, { z4: 0 }, { z4: 1, duration: 1.5, ease: 'power1.out' }, 3.5)
+  .fromTo(S, { logo: 0 }, { logo: 1, duration: .42, ease: 'power3.out' }, 3.58)
+  .fromTo(S, { ring4: 0 }, { ring4: 1, duration: .66, ease: 'power2.out' }, 3.62)
+  .fromTo(S, { url: 0 }, { url: 1, duration: .36, ease: 'power3.out' }, 3.85)
+  .fromTo(S, { fade: 0 }, { fade: 1, duration: .4, ease: 'sine.inOut' }, 4.6);
+tl.progress(1, true).progress(0, true);             // 모든 트윈 시작값을 순서대로 고정 → 어느 시점으로 seek해도 같은 결과
+
+// ============================================================ 씬별 갱신
+function setCam(pos, look, fov) {
+  camera.position.set(...pos); camera.fov = fov; camera.updateProjectionMatrix();
+  camera.lookAt(...look);
+}
+function upd1(t) {
+  setCam([E1.cam[0], E1.cam[1], E1.cam[2] - E1.push * S.push], E1.look, 30);
+  camera.fov = fitFov(E1.frame[0], E1.frame[1], E1.cam[2]); camera.updateProjectionMatrix();
+  phone1.g.position.set(...E1.phone);
+  phone1.g.rotation.set(E1.rot[0] + .04 * S.push, E1.rot[1] + .05 * S.push, E1.rot[2] + .02 * S.push);
+  drawLock(S.banner, S.glow * (1 - .4 * clamp((t - .45) / .35)));
+  driftBokeh(B1, t, .9);
+  ding.visible = S.ding > .01; ding.material.opacity = S.ding;
+  ding.position.set(...E1.ding); ding.scale.setScalar(.38 * lerp(.7, 1, S.ding));
+  scene.background = BG1; zoomBg(BG1, 1 + .03 * S.push);
+}
+function upd2(t) {
+  const d = E2.camDist * (1 - .035 * S.z2);
+  setCam([0, 0, E2.cardZ + d], [0, 0, E2.cardZ], 30);
+  camera.fov = fitFov(1.5 / .78, 1.38 / .62, E2.camDist); camera.updateProjectionMatrix();
+  const c = S.card;
+  invite.g.position.set(0, lerp(-1.1, 0, c), E2.cardZ);
+  invite.g.rotation.set(lerp(.38, .12, c), lerp(-.32, -.2, c), lerp(-.1, -.06, c));
+  invite.g.scale.setScalar(lerp(.88, 1, c));
+  invite.opacity(clamp(c * 1.6)); invite.draw(S.sheen);
+  orbit2.g.position.set(0, -.3, E2.cardZ); orbit2.g.rotation.set(.46, 0, lerp(-.26, -.18, S.z2)); orbit2.set(S.ring);
+  orbit2.g.children.forEach((m, i) => { m.material.opacity = (i === 0 ? .4 : 1) * clamp(c * 1.6); });
+  twinkle(stars2, t);
+  driftBokeh(B2, t, .8);
+  scene.background = BG2; zoomBg(BG2, 1.02 + .02 * S.z2);
+}
+function upd3(t) {
+  const v = t - 2;
+  key.intensity = .9;
+  const cp = [E3.cam[0] + .35 * S.cam3, E3.cam[1], E3.cam[2] - .3 * S.cam3];
+  camera.position.set(...cp); camera.fov = E3.fov; camera.updateProjectionMatrix();
+  camera.lookAt(E3.look[0], cp[1], E3.look[2]); camera.rotateX(pitchFor(E3.hz));
+  const bx = lerp(E3.busFrom, E3.busTo, S.bus);
+  bus3d.position.set(bx, 0, 0);
+  bus3d.children.forEach(m => { if (m.geometry.type === 'CylinderGeometry') m.rotation.y = -bx / .32; });
+  if (busImg) { busImg.position.set(bx, .1, 0); busImg.lookAt(camera.position.x, .1, camera.position.z); }
+  streak.position.x = lerp(9, -9, clamp((v - .05) / 1.1)); streak.material.opacity = .9 * (1 - clamp((v - .9) / .3));
+  skyCard.g.position.set(...E3.sky); skyCard.g.position.y += lerp(.5, Math.sin(v * 2.4) * .04, S.sky);
+  skyCard.g.rotation.set(.12, -.42, -.05); skyCard.g.scale.setScalar(E3.skyS * lerp(.85, 1, S.sky));
+  skyCard.opacity(S.sky); skyCard.draw(S.skySheen);
+  scene.background = BG3; zoomBg(BG3, lerp(1.1, 1.0, S.bus), lerp(.01, -.006, S.bus), 0);
+}
+function upd4(t) {
+  setCam([0, 0, E4.dist * (1 - .025 * S.z4)], [0, 0, 0], E4.fov);
+  const halfH = E4.dist * Math.tan(THREE.MathUtils.degToRad(E4.fov / 2));
+  planet.position.set(0, -halfH * (V ? .7 : .6) - 40, -2); atmo.position.copy(planet.position);
+  clouds4.forEach(sp => {
+    const { side, i } = sp.userData, halfW = halfH * ASPECT;
+    const big = i < 2 ? 1 : .7;
+    sp.scale.set(halfW * (V ? 1.1 : .62) * big, halfW * (V ? .7 : .39) * big, 1);
+    sp.position.set(side * halfW * (i < 2 ? .92 : .66) + side * .08 * S.z4, -halfH * (i < 2 ? .8 : .9), i < 2 ? 1 : .6);
+  });
+  const lw = E4.logoW;
+  logoMesh.scale.set(lw * lerp(.93, 1, S.logo), lw * lerp(.93, 1, S.logo), 1);
+  logoMesh.position.set(0, E4.logoY + lerp(-.06, 0, S.logo), .2); logoMesh.material.opacity = S.logo;
+  urlMesh.scale.set(lw * .6, lw * .6, 1);
+  urlMesh.position.set(0, E4.logoY - lw * .27 + lerp(-.05, 0, S.url), .2); urlMesh.material.opacity = S.url;
+  orbit4.g.position.set(0, E4.logoY - lw * .03, 0); orbit4.g.rotation.set(.5, 0, lerp(-.2, -.14, S.z4)); orbit4.set(S.ring4);
+  twinkle(stars4, t);
+  scene.background = BG4; zoomBg(BG4, lerp(1.05, 1.0, S.z4));
+}
+
+const flashEl = document.getElementById('flash'), fadeEl = document.getElementById('fade');
+const groups = [G1, G2, G3, G4];
+function renderAt(t) {
+  t = clamp(t, 0, 4.999);
+  tl.seek(t, false);
+  key.intensity = 1.6;
+  const seg = t < .8 ? 0 : t < 2 ? 1 : t < 3.5 ? 2 : 3;
+  groups.forEach((g, i) => { g.visible = i === seg; });
+  skyCard.g.visible = seg === 2 && S.sky > .001;
+  scene.fog = seg === 2 && !HAS.e03bg ? FOG3 : null;
+  [upd1, upd2, upd3, upd4][seg](t);
+  flashEl.style.opacity = S.flash; fadeEl.style.opacity = S.fade;
+  composer.render();
+  return new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+}
+window.renderAt = renderAt;
+
+// ============================================================ 이미지 로드 → 준비 완료
+const FOG3 = new THREE.Fog(0xe9c4dc, 22, 110);
+const HAS = {};
+const [e3bg, e3bus, e4bg] = await Promise.all(['e03_bg', 'e03_bus', 'e04_bg'].map(n => loadImage(`${ASSET}${n}_${SFX}.png`)));
+HAS.e03bg = !!e3bg; HAS.e03bus = !!e3bus; HAS.e04bg = !!e4bg;
+window.ASSETS = HAS;
+BG3 = bgCanvas((ctx, w, h) => e3bg ? coverDraw(ctx, e3bg, w, h) : drawCity(ctx, w, h));
+BG4 = bgCanvas((ctx, w, h) => e4bg ? coverDraw(ctx, e4bg, w, h) : drawNight(ctx, w, h));
+// GPT 배경에는 이미 도로가 있으므로 코드 도로·차선은 숨김 (빛 줄기는 유지)
+road.visible = !e3bg; G3.children.forEach(m => { if (m.material === laneMat) m.visible = !e3bg; });
+if (e3bus) {
+  const tex = new THREE.Texture(e3bus); tex.colorSpace = THREE.SRGBColorSpace; tex.needsUpdate = true;
+  const bh = 2.0, bw = bh * e3bus.width / e3bus.height;
+  busImg = new THREE.Mesh(new THREE.PlaneGeometry(bw, bh), new THREE.MeshBasicMaterial({ map: tex, transparent: true }));
+  G3.add(busImg); bus3d.visible = false;
+}
+proc4.visible = !e4bg;
+
+await renderAt(MODE === 'frame' ? parseFloat(Q.get('t')) : 0);
+window.READY = true;
+document.title = 'ready';
+if (MODE === 'preview') {
+  const t0 = performance.now();
+  const loop = () => { renderAt(((performance.now() - t0) / 1000) % 5); requestAnimationFrame(loop); };
+  loop();
+}
+</script>
+</body>
+</html>

@@ -82,7 +82,6 @@ metaBus에 참여하시겠습니까?
 | 고등학생의 방 (늦은 밤) | SCENE 01 | `environment/` |
 | 퇴근길 버스 정류장 (늦은 저녁) | SCENE 01 | `environment/` |
 | METABUS 정류장 | SCENE 03 | `environment/` |
-| 버스 내부 | SCENE 04 | `environment/` |
 | 산사 (새벽, 안개 낀 산) | SCENE 04 | `environment/` |
 | 스키장 슬로프 | SCENE 04–05 | `environment/` |
 | 레이싱 트랙 | SCENE 05 | `environment/` |

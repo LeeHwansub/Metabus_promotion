@@ -1,5 +1,5 @@
 {
-  "version": "0.5",
+  "version": "0.6",
   "status": "draft",
   "total_duration_sec": 30,
   "aspect_ratios": [
@@ -55,14 +55,15 @@
         "버스는 여러 세계를 연결하는 이동 수단처럼",
         "도착 시 조명과 공간 변화로 판타지 분위기 강조",
         "버스 디자인 확정: 참고 이미지 기준 (둥근 미래형 셔틀, 로열 인디고 차체, 노란 라인, 측면 metaBus 로고)",
-        "[제안] 마스코트는 처음부터 스타일라이즈 3D — 현실에 들어온 새로운 세계의 첫 신호"
+        "[제안] 마스코트는 처음부터 스타일라이즈 3D — 현실에 들어온 새로운 세계의 첫 신호",
+        "탑승 동작은 생략: 버스 도착 → 문이 열리며 빛이 화면을 덮고 바로 S04 손 POV로 연결 (2026-11-17 결정)"
       ],
       "render_style": "실사 3D → 판타지 전환 (마스코트·버스는 브랜드 디자인)"
     },
     {
       "scene": 4,
       "title": "현실의 나에서 새로운 캐릭터로",
-      "time": "14–19",
+      "time": "14–17",
       "purpose": "METABUS에서 사용자가 직접 새로운 세계의 구성원이 된다는 점을 보여줌",
       "direction": [
         "변신 '과정'은 보여주지 않는다 — 버스에 타면 이미 변해 있음을 1인칭으로 깨닫는 연출",
@@ -76,7 +77,7 @@
     {
       "scene": 5,
       "title": "METABUS에서 만나는 다양한 경험",
-      "time": "19–25",
+      "time": "17–25",
       "purpose": "단순한 자연 힐링이 아니라 다양한 웹 콘텐츠를 경험하는 플랫폼임을 전달",
       "direction": [
         "체험형 몽타주: 조용함(산사) → 속도(스키·레이싱) → 함성(야구장)으로 에너지 상승",
@@ -90,14 +91,14 @@
     },
     {
       "scene": 6,
-      "title": "다시 도착한 초대",
+      "title": "다시 도착한 초대 (엔딩 모션그래픽)",
       "time": "25–30",
-      "purpose": "영상 속 초대를 시청자에게도 전달하고 브랜드 인지와 사이트 방문으로 연결",
+      "purpose": "알림 → 유리 초대장 → 버스와 함께하는 초대 → 브랜드 엔딩으로 시청자에게 초대를 전달",
       "direction": [
-        "별도 슬로건 없음 — 알림, 로고, 사이트 주소만",
-        "알림은 SCENE 02와 문구·디자인·알림음 동일"
+        "ending_storybord2.png 기준, 05_PRODUCTION/motion_graphics/ending_html 에서 제작",
+        "별도 슬로건 없음 — 로고와 metabus.app 으로 종료"
       ],
-      "render_style": "스타일라이즈 3D → 그래픽(로고)"
+      "render_style": "HTML/CSS 모션그래픽 + GPT 배경 이미지"
     }
   ],
   "shots": [
@@ -108,7 +109,7 @@
       "end_sec": 3,
       "duration_sec": 3,
       "description": "늦은 밤 고등학생의 방. 책상 위 문제집과 참고서가 쌓여 있음. 서윤이 문제를 풀다 펜을 내려놓고 잠시 눈을 감고 지친 표정. 책상 위 스마트폰에서 알림이 울림",
-      "camera": "CU/MS, 스탠드 조명, 느린 푸시인",
+      "camera": "책상 너머 3/4 정면 MS, 45mm, 앞쪽 책 더미로 깊이감, 느린 푸시인",
       "characters": [
         "CHAR_01"
       ],
@@ -126,7 +127,7 @@
       "end_sec": 7,
       "duration_sec": 4,
       "description": "늦은 저녁 퇴근길 버스 정류장. 준호가 가방을 멘 채 버스를 기다리며 피곤한 표정으로 폰을 봄. 서윤과 동일한 알림음이 울리고 화면을 확인",
-      "camera": "MS → CU, 가로등 조명",
+      "camera": "와이드 설정 샷(인물 오른쪽 1/3), 35mm, 앞쪽으로 지나가는 차 불빛, 느린 달리 인",
       "characters": [
         "CHAR_02"
       ],
@@ -144,7 +145,7 @@
       "end_sec": 8.5,
       "duration_sec": 1.5,
       "description": "스마트폰 화면 인서트. 동일한 METABUS 초대 알림",
-      "camera": "ECU 인서트, 화면 정면",
+      "camera": "위에서 내려다본 폰 화면 인서트, 50mm, 고정",
       "characters": [],
       "on_screen_text": "화면 텍스트: metaBus / 새로운 경험이 기다리고 있습니다. / metaBus에 참여하시겠습니까? / [참여하기]",
       "sfx_music": "잔잔한 음악",
@@ -160,7 +161,7 @@
       "end_sec": 10,
       "duration_sec": 1.5,
       "description": "서윤과 준호가 각자의 공간에서 [참여하기]를 누름. 누르는 순간 화면에서 은은하고 따뜻한 빛이 퍼짐",
-      "camera": "손가락·화면 CU 교차 또는 분할",
+      "camera": "ECU 교차 — A: 책상 위 폰을 누르는 손, B: 아래에서 올려다본 폰 빛과 얼굴, 50mm, 고정",
       "characters": [
         "CHAR_01",
         "CHAR_02"
@@ -179,7 +180,7 @@
       "end_sec": 12,
       "duration_sec": 2,
       "description": "스마트폰에서 시작된 빛이 주변 공간으로 퍼지고, 방과 정류장이 서서히 METABUS 정류장으로 변함",
-      "camera": "와이드, 부드러운 트래킹",
+      "camera": "좌우 대칭 와이드, 천천히 좌→우 트래킹 (A 방 28mm / B 정류장 35mm)",
       "characters": [
         "CHAR_01",
         "CHAR_02"
@@ -197,8 +198,8 @@
       "start_sec": 12,
       "end_sec": 14,
       "duration_sec": 2,
-      "description": "멀리서 METABUS 셔틀 버스(참고 이미지 디자인)가 등장해 도착. 문이 열리고 마스코트가 경례하며 맞이함. 서윤과 준호가 각각 버스에 탑승",
-      "camera": "로우앵글 버스 진입 → 탑승 트래킹",
+      "description": "METABUS 셔틀 버스가 도착해 멈춰 서고, 문 앞에서 마스코트가 경례로 맞이함. 문이 열리며 쏟아지는 빛이 화면을 덮음 (탑승 동작은 보여주지 않음 — 빛에서 다음 장면으로 바로 연결)",
+      "camera": "두 사람 뒤 낮은 OTS 히어로 샷, 28mm — 인물 실루엣이 앞쪽 좌우, 버스와 마스코트가 중앙 / 문이 열리며 빛이 화면을 덮음",
       "characters": [
         "CHAR_01",
         "CHAR_02",
@@ -215,29 +216,10 @@
       "id": "S04_C01",
       "scene": 4,
       "start_sec": 14,
-      "end_sec": 16,
-      "duration_sec": 2,
-      "description": "카메라가 버스 내부로 이동. 버스 내부의 빛이 두 주인공을 감쌈",
-      "camera": "버스 안으로 들어가는 트래킹",
-      "characters": [
-        "CHAR_01",
-        "CHAR_02"
-      ],
-      "on_screen_text": "",
-      "sfx_music": "음악 빌드업",
-      "safe_area_note": "인물 중앙",
-      "image_ref": "storyboard_images/S04_C01.png",
-      "image_prompt_id": "IMG_S04_C01",
-      "video_prompt_id": "VID_S04_C01"
-    },
-    {
-      "id": "S04_C02",
-      "scene": 4,
-      "start_sec": 16,
-      "end_sec": 19,
+      "end_sec": 17,
       "duration_sec": 3,
       "description": "첫 변신 공개. 각자 1인칭 시점으로 손을 내려다봄 — 준호: 염주를 쥔 스님의 손, 고개를 들면 고요한 산사 / 서윤: 스키 장갑을 낀 손에 폴, 고개를 들면 눈 덮인 슬로프 꼭대기",
-      "camera": "POV 손 클로즈업 → 틸트업으로 공간 공개 (A/B 교차)",
+      "camera": "1인칭 POV, 24mm — 빛에서 페이드인 → 손(염주 / 스키 장갑·폴) 잠시 유지 → 틸트업으로 공간 공개 (A 산사 / B 스키장)",
       "characters": [
         "CHAR_01",
         "CHAR_02"
@@ -245,9 +227,9 @@
       "on_screen_text": "",
       "sfx_music": "음악 확장, 산사 풍경 소리 / 설원 바람",
       "safe_area_note": "손·인물 중앙",
-      "image_ref": "storyboard_images/S04_C02.png",
-      "image_prompt_id": "IMG_S04_C02",
-      "video_prompt_id": "VID_S04_C02",
+      "image_ref": "storyboard_images/S04_C01.png",
+      "image_prompt_id": "IMG_S04_C01",
+      "video_prompt_id": "VID_S04_C01",
       "experience": [
         "산사(기도)",
         "스키장"
@@ -260,11 +242,11 @@
     {
       "id": "S05_C01",
       "scene": 5,
-      "start_sec": 19,
-      "end_sec": 21,
-      "duration_sec": 2,
+      "start_sec": 17,
+      "end_sec": 19.5,
+      "duration_sec": 2.5,
       "description": "서윤이 설원을 가르며 스키 활강. 가루눈이 흩날리고 햇빛이 반짝임",
-      "camera": "측면 트래킹 → 정면 로우앵글, 속도감",
+      "camera": "측면 트래킹, 35mm — 스키어 왼쪽 1/3, 진행 방향 앞쪽 여백",
       "characters": [
         "CHAR_01"
       ],
@@ -284,11 +266,11 @@
     {
       "id": "S05_C02",
       "scene": 5,
-      "start_sec": 21,
-      "end_sec": 23,
-      "duration_sec": 2,
+      "start_sec": 19.5,
+      "end_sec": 22,
+      "duration_sec": 2.5,
       "description": "준호가 스님에서 레이서로 — 레이싱카를 몰고 트랙을 질주",
-      "camera": "차량 추적 로우앵글 + 운전석 POV",
+      "camera": "낮은 3/4 후방 추격(28mm) → 운전석 1인칭(24mm)",
       "characters": [
         "CHAR_02"
       ],
@@ -309,11 +291,11 @@
     {
       "id": "S05_C03",
       "scene": 5,
-      "start_sec": 23,
+      "start_sec": 22,
       "end_sec": 25,
-      "duration_sec": 2,
+      "duration_sec": 3,
       "description": "야구장 관중석에서 응원단 차림의 서윤과 준호가 처음 마주치고 함께 응원. 마스코트도 옆에서 응원봉을 흔듦",
-      "camera": "관중석 MS → 와이드 크레인업",
+      "camera": "세 명(서윤·준호·마스코트) 미디엄 샷 정면 약간 로우, 40mm → 크레인업으로 관중석 공개",
       "characters": [
         "CHAR_01",
         "CHAR_02",
@@ -336,74 +318,78 @@
     {
       "id": "S06_C01",
       "scene": 6,
-      "start_sec": 25,
-      "end_sec": 27,
-      "duration_sec": 2,
-      "description": "스님·스키·레이싱·응원 장면이 짧게 교차. 마지막에 야구장 노을 속 두 사람과 마스코트. 화면이 천천히 어두워짐",
-      "camera": "교차 편집, 페이드",
-      "characters": [
-        "CHAR_01",
-        "CHAR_02",
-        "MASCOT_01"
-      ],
-      "on_screen_text": "",
-      "sfx_music": "음악 잦아듦",
-      "safe_area_note": "인물 중앙",
-      "image_ref": "storyboard_images/S06_C01.png",
-      "image_prompt_id": "IMG_S06_C01",
-      "video_prompt_id": "VID_S06_C01"
+      "start_sec": 25.0,
+      "end_sec": 25.8,
+      "duration_sec": 0.8,
+      "description": "스마트폰 잠금화면(9:41)에 metaBus 알림 배너가 도착하고 화면에 빛이 퍼짐 (E01)",
+      "camera": "3/4 정면, 천천히 다가감",
+      "characters": [],
+      "on_screen_text": "알림: metaBus / 새로운 경험이 기다리고 있습니다. / 지금",
+      "sfx_music": "알림음(E01) → 음악 마무리",
+      "safe_area_note": "16:9·9:16 각각 레이아웃",
+      "image_ref": "05_PRODUCTION/motion_graphics/ending_html/index.html",
+      "image_prompt_id": "",
+      "video_prompt_id": ""
     },
     {
       "id": "S06_C02",
       "scene": 6,
-      "start_sec": 27,
-      "end_sec": 28,
-      "duration_sec": 1,
-      "description": "처음과 동일한 알림음이 울리고 동일한 METABUS 초대 알림이 화면에 나타남",
-      "camera": "화면 정면 (풀스크린 UI)",
+      "start_sec": 25.8,
+      "end_sec": 27.0,
+      "duration_sec": 1.2,
+      "description": "폰 앞으로 유리 초대장이 떠오르고 빛나는 궤도 링이 카드를 감쌈 (E02)",
+      "camera": "정면, 카드 등장",
       "characters": [],
-      "on_screen_text": "화면 텍스트: metaBus / 새로운 경험이 기다리고 있습니다. / metaBus에 참여하시겠습니까? / [참여하기]",
-      "sfx_music": "METABUS 알림음 (공통)",
-      "safe_area_note": "알림 UI 세로 세이프존 내",
-      "image_ref": "storyboard_images/S06_C02.png",
-      "image_prompt_id": "IMG_S06_C02",
-      "video_prompt_id": "VID_S06_C02"
+      "on_screen_text": "카드: metaBus / 새로운 경험이 / 기다리고 있습니다. / [참여하기 >]",
+      "sfx_music": "알림음(E01) → 음악 마무리",
+      "safe_area_note": "16:9·9:16 각각 레이아웃",
+      "image_ref": "05_PRODUCTION/motion_graphics/ending_html/index.html",
+      "image_prompt_id": "",
+      "video_prompt_id": ""
     },
     {
       "id": "S06_C03",
       "scene": 6,
-      "start_sec": 28,
-      "end_sec": 29,
-      "duration_sec": 1,
-      "description": "알림 화면이 자연스럽게 사라지고 화면 중앙에 METABUS 공식 로고 등장",
-      "camera": "고정",
+      "start_sec": 27.0,
+      "end_sec": 28.5,
+      "duration_sec": 1.5,
+      "description": "미래 도시를 달리는 metaBus 버스, 하늘에 유리 카드가 떠 있음 (E03, 배경·버스는 GPT 이미지)",
+      "camera": "로우앵글, 버스 등장",
       "characters": [],
-      "on_screen_text": "METABUS 로고",
-      "sfx_music": "",
-      "safe_area_note": "로고 중앙",
-      "image_ref": "storyboard_images/S06_C03.png",
-      "image_prompt_id": "IMG_S06_C03",
-      "video_prompt_id": "VID_S06_C03"
+      "on_screen_text": "",
+      "sfx_music": "알림음(E01) → 음악 마무리",
+      "safe_area_note": "16:9·9:16 각각 레이아웃",
+      "image_ref": "05_PRODUCTION/motion_graphics/ending_html/index.html",
+      "image_prompt_id": "ASSET_PROMPTS.md",
+      "video_prompt_id": ""
     },
     {
       "id": "S06_C04",
       "scene": 6,
-      "start_sec": 29,
-      "end_sec": 30,
-      "duration_sec": 1,
-      "description": "로고 아래 metabus.app 표시. 따뜻한 빛이 서서히 사라지며 종료",
-      "camera": "고정, 페이드아웃",
+      "start_sec": 28.5,
+      "end_sec": 30.0,
+      "duration_sec": 1.5,
+      "description": "라벤더 하늘·구름·행성 지평선 위로 로고와 metabus.app, 궤도 링 후 페이드아웃 (E04)",
+      "camera": "정면 고정",
       "characters": [],
-      "on_screen_text": "metabus.app",
-      "sfx_music": "",
-      "safe_area_note": "로고·주소 중앙",
-      "image_ref": "storyboard_images/S06_C04.png",
-      "image_prompt_id": "IMG_S06_C04",
-      "video_prompt_id": "VID_S06_C04"
+      "on_screen_text": "metaBus / metabus.app",
+      "sfx_music": "알림음(E01) → 음악 마무리",
+      "safe_area_note": "16:9·9:16 각각 레이아웃",
+      "image_ref": "05_PRODUCTION/motion_graphics/ending_html/index.html",
+      "image_prompt_id": "ASSET_PROMPTS.md",
+      "video_prompt_id": ""
     }
   ],
   "references": [
     "01_VISUAL/brand/metabus.png",
     "01_VISUAL/brand/metabus2.png"
+  ],
+  "camera_principles": [
+    "인물은 화면 1/3 지점에 크게(미디엄~클로즈업)",
+    "인물 컷 35~50mm",
+    "앞쪽 사물로 깊이감",
+    "표정이 보이는 3/4 각도",
+    "모든 컷에 느린 카메라 이동",
+    "움직이는 피사체는 진행 방향 앞쪽에 여백"
   ]
 }

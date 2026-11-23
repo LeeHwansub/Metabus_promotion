@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>PLAY sample</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=DM+Serif+Display&family=Inter:wght@500;700&display=block" rel="stylesheet">
+<style>
+  html, body { margin: 0; background: #000; overflow: hidden; }
+  canvas { display: block; }
+</style>
+</head>
+<body>
+<canvas id="c" width="1920" height="1080"></canvas>
+<script>
+// metaBus 모션그래픽 PLAY 버전 · 스타일 샘플 (6초, 16:9)
+// ?font=serif | sans  · window.renderAt(t) 로 프레임 단위 렌더
+const Q = new URLSearchParams(location.search);
+const FONT = Q.get('font') === 'sans'
+  ? { family: '"Archivo Black"', weight: '400', tracking: 0.02 }
+  : { family: '"DM Serif Display"', weight: '400', tracking: -0.01 };
+const W = 1920, H = 1080;
+const cv = document.getElementById('c'), ctx = cv.getContext('2d');
+const IMG = {};
+const load = (k, src) => new Promise((res, rej) => { const i = new Image(); i.onload = () => { IMG[k] = i; res(); }; i.onerror = () => rej(new Error('image ' + src)); i.src = src; });
+
+// ---------- 유틸
+const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
+const prog = (t, a, b) => clamp((t - a) / (b - a));
+const easeOut = x => 1 - Math.pow(1 - x, 3);
+const easeInOut = x => x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
+const easeBack = x => { const c1 = 1.70158, c3 = c1 + 1; return 1 + c3 * Math.pow(x - 1, 3) + c1 * Math.pow(x - 1, 2); };
+const lerp = (a, b, x) => a + (b - a) * x;
+function rng(seed) { return () => { seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646; }; }
+
+function cover(img, scale = 1, ox = 0, oy = 0) {
+  const s = Math.max(W / img.width, H / img.height) * scale;
+  const w = img.width * s, h = img.height * s;
+  ctx.drawImage(img, (W - w) / 2 + ox, (H - h) / 2 + oy, w, h);
+}
+function fontPx(size) { return `${FONT.weight} ${size}px ${FONT.family}`; }
+// PLAY 글자별 위치 (가운데 정렬, 목표 폭에 맞춤)
+function layoutWord(word, targetW) {
+  let size = 400; ctx.font = fontPx(size);
+  const raw = [...word].reduce((s, ch) => s + ctx.measureText(ch).width, 0) + size * FONT.tracking * (word.length - 1);
+  size = size * targetW / raw; ctx.font = fontPx(size);
+  const ws = [...word].map(ch => ctx.measureText(ch).width);
+  const total = ws.reduce((a, b) => a + b, 0) + size * FONT.tracking * (word.length - 1);
+  let x = -total / 2; const out = [];
+  [...word].forEach((ch, i) => { out.push({ ch, x: x + ws[i] / 2, w: ws[i] }); x += ws[i] + size * FONT.tracking; });
+  return { size, letters: out, total };
+}
+function roundRect(x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
+function badge(alpha = 1) {
+  if (alpha <= 0) return;
+  ctx.save(); ctx.globalAlpha = alpha;
+  ctx.font = '700 26px Inter, sans-serif'; const label = 'metabus.app';
+  const w = ctx.measureText(label).width + 52, h = 50, x = W - w - 48, y = 44;
+  ctx.fillStyle = 'rgba(12,12,108,.72)'; roundRect(x, y, w, h, 25); ctx.fill();
+  ctx.fillStyle = '#FCC024'; ctx.beginPath(); ctx.arc(x + 22, y + h / 2, 6, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#fff'; ctx.textBaseline = 'middle'; ctx.fillText(label, x + 36, y + h / 2 + 1);
+  ctx.restore();
+}
+function playTriangle(cx, cy, r, color) {
+  ctx.fillStyle = color; ctx.beginPath();
+  ctx.moveTo(cx - r * .42, cy - r * .6); ctx.lineTo(cx + r * .62, cy); ctx.lineTo(cx - r * .42, cy + r * .6); ctx.closePath(); ctx.fill();
+}
+
+// ---------- 장면 A: 폰 ▶ → PLAY (0 ~ 2.6s)
+function sceneA(t) {
+  const push = 1 + .07 * easeInOut(prog(t, 0, 2.6));
+  cover(IMG.phone, push);
+  const cx = W / 2, cy = H / 2;
+  const appear = easeOut(prog(t, .35, .8));
+  const press = Math.sin(Math.PI * prog(t, 1.05, 1.35));
+  const morph = easeInOut(prog(t, 1.35, 2.1));
+  // 화면 위 유리 ▶ 버튼
+  if (appear > 0 && morph < 1) {
+    const r = 62 * (1 - .12 * press) * (1 - morph);
+    ctx.save(); ctx.globalAlpha = appear * (1 - morph);
+    ctx.shadowColor = 'rgba(255,220,150,.9)'; ctx.shadowBlur = 40;
+    ctx.fillStyle = 'rgba(255,255,255,.22)'; ctx.beginPath(); ctx.arc(cx, cy, r * 1.15, 0, Math.PI * 2); ctx.fill();
+    ctx.shadowBlur = 0; ctx.strokeStyle = 'rgba(255,255,255,.8)'; ctx.lineWidth = 2; ctx.stroke();
+    playTriangle(cx + 4, cy, r * .78, '#ffffff');
+    ctx.restore();
+  }
+  // 누르는 순간 빛 링
+  const ring = prog(t, 1.2, 1.9);
+  if (ring > 0 && ring < 1) {
+    ctx.save(); ctx.globalAlpha = (1 - ring) * .9; ctx.strokeStyle = '#FFE2A8'; ctx.lineWidth = 6 * (1 - ring) + 1;
+    ctx.beginPath(); ctx.arc(cx, cy, 70 + 700 * easeOut(ring), 0, Math.PI * 2); ctx.stroke(); ctx.restore();
+  }
+  // 따뜻한 빛 번짐
+  const glow = easeOut(prog(t, 1.2, 2.6));
+  if (glow > 0) {
+    const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, 1200);
+    g.addColorStop(0, `rgba(255,236,190,${.85 * glow})`); g.addColorStop(.5, `rgba(255,200,120,${.35 * glow})`); g.addColorStop(1, 'rgba(255,180,90,0)');
+    ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+  }
+  // ▶ → PLAY (가운데에서 펼쳐지고, 커지며 화면을 채움)
+  if (morph > 0) {
+    const grow = easeInOut(prog(t, 1.9, 2.6));
+    const L = layoutWord('PLAY', lerp(1100, 3600, grow));
+    ctx.save(); ctx.translate(cx, cy + L.size * .34); ctx.font = fontPx(L.size); ctx.textAlign = 'center';
+    L.letters.forEach((l, i) => {
+      const k = easeBack(clamp(morph * 1.6 - i * .18));
+      ctx.globalAlpha = clamp(k * 1.2);
+      ctx.fillStyle = '#ffffff'; ctx.shadowColor = 'rgba(255,190,90,.9)'; ctx.shadowBlur = 50;
+      ctx.fillText(l.ch, lerp(0, l.x, k), 0);
+    });
+    ctx.restore();
+  }
+  // 끝: 흰 빛으로 덮으며 전환
+  const wipe = prog(t, 2.25, 2.6);
+  if (wipe > 0) { ctx.fillStyle = `rgba(255,250,240,${easeInOut(wipe)})`; ctx.fillRect(0, 0, W, H); }
+}
+
+// ---------- 장면 B: 스키 + PLAY 인물 뒤 + 눈보라 흩어짐 (2.6 ~ 6.0s)
+const SNOW = (() => { const r = rng(7); return Array.from({ length: 900 }, () => ({ x: r(), y: r(), s: .4 + r() * 1.6, v: .6 + r() * .9, d: r() })); })();
+function sceneB(t) {
+  const lt = t - 2.6;
+  const cam = easeInOut(prog(lt, 0, 3.4));
+  cover(IMG.ski, 1.08 + .04 * cam, lerp(30, -30, cam), 0);
+  const sh = ctx.createLinearGradient(0, 0, 0, H); sh.addColorStop(0, 'rgba(20,24,60,.10)'); sh.addColorStop(1, 'rgba(20,24,60,.28)');
+  ctx.fillStyle = sh; ctx.fillRect(0, 0, W, H);
+  // PLAY: 오른쪽에서 글자별로 밀려 들어와 인물 뒤에 놓임 → 눈보라에 흩어짐
+  const L = layoutWord('PLAY', 1640);
+  const scatter = prog(lt, 2.15, 3.1);
+  ctx.save(); ctx.translate(W / 2 + lerp(60, -60, cam), H / 2 + L.size * .36); ctx.font = fontPx(L.size); ctx.textAlign = 'center';
+  L.letters.forEach((l, i) => {
+    const inK = easeOut(prog(lt, .05 + i * .09, .55 + i * .09));
+    const r = rng(31 + i); const dx = (r() - .2) * 900, dy = -(r() * 500 + 150), rot = (r() - .5) * .9;
+    const sk = easeInOut(clamp(scatter * 1.4 - (3 - i) * .12));
+    ctx.save();
+    ctx.translate(l.x + (1 - inK) * 700 + sk * dx, sk * dy);
+    ctx.rotate(sk * rot);
+    ctx.globalAlpha = inK * (1 - sk);
+    ctx.filter = sk > 0 ? `blur(${sk * 18}px)` : 'none';
+    ctx.fillStyle = '#ffffff'; ctx.shadowColor = 'rgba(12,12,108,.55)'; ctx.shadowBlur = 46; ctx.shadowOffsetY = 10;
+    ctx.fillText(l.ch, 0, 0);
+    ctx.shadowColor = 'rgba(12,12,108,.25)'; ctx.shadowBlur = 8; ctx.shadowOffsetY = 2;
+    ctx.fillText(l.ch, 0, 0);
+    ctx.restore();
+  });
+  ctx.restore();
+  // 인물 누끼: 배경보다 조금 더 움직여 깊이감
+  cover(IMG.skiCut, 1.08 + .05 * cam, lerp(40, -50, cam), 0);
+  // 눈보라: 오른쪽 아래에서 터져 화면을 덮음
+  const burst = prog(lt, 2.0, 3.4);
+  if (burst > 0) {
+    ctx.save();
+    SNOW.forEach(p => {
+      const k = clamp(burst * 1.3 - p.d * .35);
+      if (k <= 0) return;
+      const x = lerp(W * (.75 + p.x * .3), W * (p.x * 1.2 - .1), easeOut(k) * p.v);
+      const y = lerp(H * (.85 + p.y * .2), H * (p.y * 1.1 - .05), easeOut(k));
+      if (p.s > 1.25) {
+        // 큰 눈 덩어리: 가장자리가 부드럽게 번짐
+        const s = (p.s - 1) * (60 + 220 * k);
+        const g = ctx.createRadialGradient(x, y, 0, x, y, s);
+        g.addColorStop(0, `rgba(255,255,255,${.75 * k})`); g.addColorStop(.55, `rgba(245,246,255,${.35 * k})`); g.addColorStop(1, 'rgba(240,242,255,0)');
+        ctx.globalAlpha = 1; ctx.fillStyle = g;
+        ctx.beginPath(); ctx.arc(x, y, s, 0, Math.PI * 2); ctx.fill();
+      } else {
+        // 작은 눈송이: 선명하고 작게, 움직임 방향으로 살짝 늘어남
+        const s = 1.5 + p.s * 4;
+        ctx.globalAlpha = .9 * (1 - k * .4); ctx.fillStyle = '#ffffff';
+        ctx.beginPath(); ctx.ellipse(x, y, s * 1.8, s, -.5, 0, Math.PI * 2); ctx.fill();
+      }
+    });
+    ctx.restore();
+    const cover2 = easeInOut(prog(lt, 2.7, 3.4));
+    ctx.fillStyle = `rgba(250,252,255,${cover2})`; ctx.fillRect(0, 0, W, H);
+  }
+  // 흰 빛에서 들어오는 시작
+  const inW = 1 - easeOut(prog(lt, 0, .35));
+  if (inW > 0) { ctx.fillStyle = `rgba(255,250,240,${inW})`; ctx.fillRect(0, 0, W, H); }
+}
+
+window.renderAt = async (t) => {
+  ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1; ctx.filter = 'none'; ctx.shadowBlur = 0;
+  ctx.clearRect(0, 0, W, H);
+  if (t < 2.6) sceneA(t); else sceneB(t);
+  badge(clamp(t / .4) * (1 - prog(t, 5.6, 6)));
+};
+
+(async () => {
+  try {
+    await Promise.all([load('phone', 'assets/S02_C01.png'), load('ski', 'assets/S05_C01_ski_run.png'), load('skiCut', 'assets/ski_cut.png')]);
+    await document.fonts.load(fontPx(200)); await document.fonts.load('700 26px Inter'); await document.fonts.ready;
+    window.ASSETS = { font: FONT.family, loaded: document.fonts.check(fontPx(200)) };
+    await window.renderAt(0);
+    window.READY = true;
+  } catch (e) { window.ERR = String(e); }
+})();
+</script>
+</body>
+</html>
