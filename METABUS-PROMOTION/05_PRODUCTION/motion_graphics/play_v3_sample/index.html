@@ -1,0 +1,290 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>metaBus PLAY v3 sample</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter:wght@700&display=block" rel="stylesheet">
+<style>html,body{margin:0;background:#000;overflow:hidden}canvas{display:block}</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<script>
+// metaBus 모션그래픽 PLAY v3 · 10초 샘플 — "PLAY 이후 가속"
+// 0–1.0 ▶→PLAY 폭발 · 1.0–2.6 PLAY 버스트(글자 창 속 장면 교차 → L 속으로 줌) ·
+// 2.6–4.4 스키 · 4.4–5.6 산사 · 5.6–7.0 달 · 7.0–8.4 레이싱 · 8.4–10 야구장
+// 움직임 연결: 동작 중 자르기 · 왼→오 흐름(휩팬) · 컷 끝 가속 · 빛/물체로 덮기
+const Q = new URLSearchParams(location.search);
+const V = Q.get('a') === '9x16';
+const W = V ? 1080 : 1920, H = V ? 1920 : 1080;
+const K = Math.min(W, H) / 1080;
+const cv = document.getElementById('c'); cv.width = W; cv.height = H;
+const ctx = cv.getContext('2d');
+const oc = document.createElement('canvas'); oc.width = W; oc.height = H; const octx = oc.getContext('2d');
+const FP = s => `400 ${s}px "Archivo Black"`;
+const NAVY = '#0C0C6C', YELLOW = '#FCC024';
+
+const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
+const p = (t, a, b) => clamp((t - a) / (b - a));
+const lerp = (a, b, x) => a + (b - a) * x;
+const eOut = x => 1 - Math.pow(1 - x, 3);
+const eIn = x => x * x * x;
+const eIO = x => x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
+const eBack = x => { const c1 = 1.70158, c3 = c1 + 1; return 1 + c3 * Math.pow(x - 1, 3) + c1 * Math.pow(x - 1, 2); };
+function rng(seed) { return () => { seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646; }; }
+
+const IMG = {};
+const load = (k, src) => new Promise((res, rej) => { const i = new Image(); i.onload = () => { IMG[k] = i; res(); }; i.onerror = () => rej(new Error('image ' + src)); i.src = src; });
+
+function place(img, o = {}) {
+  const s = Math.max(W / img.width, H / img.height) * (o.scale || 1);
+  const w = img.width * s, h = img.height * s;
+  let x = W / 2 - (o.fx ?? .5) * w + (o.dx || 0) * W;
+  let y = H / 2 - (o.fy ?? .5) * h + (o.dy || 0) * H;
+  if (!o.free) { x = Math.min(0, Math.max(W - w, x)); y = Math.min(0, Math.max(H - h, y)); }
+  return { x, y, w, h, s };
+}
+function draw(img, tf, filter, alpha = 1, c = ctx) {
+  if (alpha <= 0) return;
+  c.save(); c.globalAlpha = alpha; if (filter) c.filter = filter;
+  c.drawImage(img, tf.x, tf.y, tf.w, tf.h); c.restore();
+}
+const pt = (tf, u, v) => [tf.x + u * tf.w, tf.y + v * tf.h];
+function fill(color, a = 1) { if (a <= 0) return; ctx.save(); ctx.globalAlpha = a; ctx.fillStyle = color; ctx.fillRect(0, 0, W, H); ctx.restore(); }
+function glow(x, y, r, rgb, a) {
+  if (a <= 0) return;
+  const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+  g.addColorStop(0, `rgba(${rgb},${a})`); g.addColorStop(.45, `rgba(${rgb},${a * .45})`); g.addColorStop(1, `rgba(${rgb},0)`);
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+}
+function rr(x, y, w, h, r) { ctx.beginPath(); ctx.roundRect(x, y, w, h, r); }
+function flash(t, at, dur = .08, a = .55) { const k = p(t, at, at + dur); if (k > 0 && k < 1) fill('#FFFFFF', a * (1 - k)); }
+function shake(t, at, amp = 10) { const k = p(t, at, at + .25); if (k <= 0 || k >= 1) return [0, 0]; const d = (1 - k) * amp * K; return [Math.sin(t * 90) * d, Math.cos(t * 77) * d]; }
+// 속도선 (가로, 화면이 왼쪽으로 흐르는 방향)
+const LINES = (() => { const r = rng(5); return Array.from({ length: 60 }, () => ({ y: r(), l: .1 + r() * .35, o: r(), w: 1 + r() * 3 })); })();
+function speedLines(t, a) {
+  if (a <= 0) return; ctx.save(); ctx.fillStyle = '#fff';
+  LINES.forEach(q => { const x = W - ((q.o + t * 3.2) % 1.4 - .2) * W; ctx.globalAlpha = a * .5; ctx.fillRect(x, q.y * H, q.l * W, q.w * K); });
+  ctx.restore();
+}
+
+// ---------- 타이포
+function layout(word, targetW, track = .02) {
+  let size = 400; ctx.font = FP(size);
+  const raw = [...word].reduce((s, ch) => s + ctx.measureText(ch).width, 0) + size * track * (word.length - 1);
+  size *= targetW / raw; ctx.font = FP(size);
+  const ws = [...word].map(ch => ctx.measureText(ch).width);
+  const total = ws.reduce((a, b) => a + b, 0) + size * track * (word.length - 1);
+  let x = -total / 2; const L = [];
+  [...word].forEach((ch, i) => { L.push({ ch, x: x + ws[i] / 2, w: ws[i] }); x += ws[i] + size * track; });
+  return { size, L, total };
+}
+function letters(Lw, cx, cy, each) {
+  ctx.save(); ctx.font = FP(Lw.size); ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+  const base = cy + Lw.size * .36;
+  Lw.L.forEach((l, i) => {
+    const o = each(i, l) || {}; const a = o.a ?? 1; if (a <= 0) return;
+    ctx.save(); ctx.globalAlpha = a; ctx.translate(cx + l.x + (o.dx || 0), base + (o.dy || 0));
+    ctx.fillStyle = o.fill || '#fff'; ctx.shadowColor = o.shadowColor || 'rgba(12,12,108,.55)'; ctx.shadowBlur = 46 * K; ctx.shadowOffsetY = 10 * K;
+    ctx.fillText(l.ch, 0, 0); ctx.restore();
+  });
+  ctx.restore();
+}
+const WORD_W = V ? W * .9 : W * .8;
+// 글자 창: 각 글자 모양 안에 장면 이미지 (zoom: 확대 배율, (zx,zy): 확대 중심)
+function letterWindows(Lw, cx, cy, imgOf, zoom = 1, zx = W / 2, zy = H / 2, strokeA = 1) {
+  const base = cy + Lw.size * .36;
+  Lw.L.forEach((l, i) => {
+    const img = imgOf(i); if (!img) return;
+    octx.setTransform(1, 0, 0, 1, 0, 0); octx.globalCompositeOperation = 'source-over'; octx.clearRect(0, 0, W, H);
+    draw(img, place(img, { scale: 1.02 }), null, 1, octx);
+    octx.globalCompositeOperation = 'destination-in';
+    octx.setTransform(zoom, 0, 0, zoom, zx - zoom * zx, zy - zoom * zy);
+    octx.font = FP(Lw.size); octx.textAlign = 'center'; octx.textBaseline = 'alphabetic'; octx.fillStyle = '#000';
+    octx.fillText(l.ch, cx + l.x, base);
+    octx.setTransform(1, 0, 0, 1, 0, 0); octx.globalCompositeOperation = 'source-over';
+    ctx.drawImage(oc, 0, 0);
+    if (strokeA > 0) {
+      ctx.save(); ctx.setTransform(zoom, 0, 0, zoom, zx - zoom * zx, zy - zoom * zy);
+      ctx.globalAlpha = strokeA; ctx.strokeStyle = 'rgba(255,255,255,.9)'; ctx.lineWidth = 4 * K / zoom;
+      ctx.font = FP(Lw.size); ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic'; ctx.strokeText(l.ch, cx + l.x, base); ctx.restore();
+    }
+  });
+}
+
+// ---------- 입자
+const SNOW = (() => { const r = rng(7); return Array.from({ length: 900 }, () => ({ x: r(), y: r(), s: .4 + r() * 1.6, v: .6 + r() * .9, d: r() })); })();
+function snowBurst(k0) {
+  if (k0 <= 0) return; ctx.save();
+  SNOW.forEach(q => {
+    const k = clamp(k0 * 1.3 - q.d * .35); if (k <= 0) return;
+    const x = lerp(W * (.75 + q.x * .3), W * (q.x * 1.2 - .1), eOut(k) * q.v);
+    const y = lerp(H * (.85 + q.y * .2), H * (q.y * 1.1 - .05), eOut(k));
+    if (q.s > 1.25) {
+      const s = (q.s - 1) * (60 + 220 * k) * K; const g = ctx.createRadialGradient(x, y, 0, x, y, s);
+      g.addColorStop(0, `rgba(255,255,255,${.75 * k})`); g.addColorStop(.55, `rgba(245,246,255,${.35 * k})`); g.addColorStop(1, 'rgba(240,242,255,0)');
+      ctx.globalAlpha = 1; ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, s, 0, Math.PI * 2); ctx.fill();
+    } else { const s = (1.5 + q.s * 4) * K; ctx.globalAlpha = .9 * (1 - k * .4); ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.ellipse(x, y, s * 1.8, s, -.5, 0, Math.PI * 2); ctx.fill(); }
+  });
+  ctx.restore();
+}
+const SPARK = (() => { const r = rng(91); return Array.from({ length: 140 }, () => ({ x: r(), y: r(), s: r(), d: r(), w: r() })); })();
+function sparkles(k0, rgb = '255,214,140', rise = .3) {
+  if (k0 <= 0) return; ctx.save();
+  SPARK.forEach(q => {
+    const k = clamp(k0 * 1.4 - q.d * .4); if (k <= 0) return;
+    const x = W * q.x + Math.sin(q.w * 9 + k * 4) * 12 * K, y = H * (q.y + .1) - rise * H * k, s = (2 + q.s * 5) * K * (.5 + k);
+    ctx.globalAlpha = Math.sin(Math.PI * clamp(k)) * .95;
+    const g = ctx.createRadialGradient(x, y, 0, x, y, s * 4); g.addColorStop(0, `rgba(${rgb},1)`); g.addColorStop(1, `rgba(${rgb},0)`);
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, s * 4, 0, Math.PI * 2); ctx.fill();
+  });
+  ctx.restore();
+}
+const CONF = (() => { const r = rng(55); const cols = ['#FCC024', '#906CFC', '#FFFFFF', '#6060E4']; return Array.from({ length: 160 }, () => ({ x: r(), y: r(), s: r(), c: cols[Math.floor(r() * 4)], w: r(), v: .4 + r() * .8 })); })();
+function confetti(t) {
+  ctx.save();
+  CONF.forEach(q => { const y = ((q.y + t * .3 * q.v) % 1.1 - .05) * H, x = W * q.x + Math.sin(t * 3 + q.w * 10) * 22 * K;
+    ctx.save(); ctx.translate(x, y); ctx.rotate(t * 5 * q.v + q.w * 6); ctx.globalAlpha = .9; ctx.fillStyle = q.c; ctx.fillRect(-6 * K, -3 * K, 12 * K * (.6 + q.s), 6 * K); ctx.restore(); });
+  ctx.restore();
+}
+const STARS = (() => { const r = rng(3); return Array.from({ length: 220 }, () => ({ x: r(), y: r(), s: r(), w: r() })); })();
+function stars(t, a = 1) { ctx.save(); STARS.forEach(q => { ctx.globalAlpha = a * (.3 + .5 * (.5 + .5 * Math.sin(t * 3 + q.w * 20))); ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(q.x * W, q.y * H, (.6 + q.s * 1.6) * K, 0, Math.PI * 2); ctx.fill(); }); ctx.restore(); }
+let MOSAIC = null;
+function buildMosaic() {
+  const cols = 72, rows = 20, c = document.createElement('canvas'); c.width = cols; c.height = rows;
+  const x = c.getContext('2d'); x.font = `400 ${rows * 1.05}px "Archivo Black"`; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText('PLAY', cols / 2, rows / 2 + 1);
+  const d = x.getImageData(0, 0, cols, rows).data; const cells = []; const r = rng(12);
+  for (let j = 0; j < rows; j++) for (let i = 0; i < cols; i++) { const on = d[(j * cols + i) * 4 + 3] > 110; cells.push({ i, j, on, c: on ? (r() < .82 ? YELLOW : '#FFFFFF') : (r() < .5 ? '#2A2280' : '#3B35A8'), d: r() }); }
+  MOSAIC = { cols, rows, cells };
+}
+function mosaic(cx, cy, w, k) {
+  const cs = w / MOSAIC.cols, x0 = cx - w / 2, y0 = cy - cs * MOSAIC.rows / 2; ctx.save();
+  MOSAIC.cells.forEach(c => { const f = eOut(clamp(k * 1.8 - (c.i / MOSAIC.cols) * .8 - c.d * .15)); if (f <= 0) return;
+    ctx.globalAlpha = c.on ? f : f * .85; ctx.fillStyle = c.c; const sy = Math.abs(Math.cos((1 - f) * Math.PI / 2));
+    ctx.fillRect(x0 + c.i * cs + cs * .08, y0 + c.j * cs + cs * (1 - sy) / 2 + cs * .08, cs * .84, cs * .84 * sy); });
+  ctx.restore();
+}
+function badge(a) {
+  if (a <= 0) return; ctx.save(); ctx.globalAlpha = a; const fs = 26 * K * (V ? 1.25 : 1);
+  ctx.font = `700 ${fs}px Inter, sans-serif`; const label = 'metabus.app';
+  const w = ctx.measureText(label).width + fs * 2, h = fs * 1.9, x = W - w - 44 * K, y = (V ? 120 : 44) * K;
+  ctx.fillStyle = 'rgba(12,12,108,.72)'; rr(x, y, w, h, h / 2); ctx.fill();
+  ctx.fillStyle = YELLOW; ctx.beginPath(); ctx.arc(x + fs * .85, y + h / 2, fs * .23, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#fff'; ctx.textBaseline = 'middle'; ctx.fillText(label, x + fs * 1.4, y + h / 2 + 1); ctx.restore();
+}
+
+// ================= 장면
+// ① ▶ → PLAY 폭발 (0–1.0)
+function aBurst(t) {
+  const tf = place(IMG.tapB, { scale: 1.05 + .08 * eIn(p(t, 0, 1)), fx: .5 }); draw(IMG.tapB, tf, 'saturate(.85)');
+  const [x, y] = pt(tf, .56, .64);
+  glow(x, y, (300 + 1500 * eOut(p(t, 0, .8))) * K, '255,226,170', .6 + .4 * p(t, .2, .8));
+  const m = eOut(p(t, .25, .7));
+  const Lw = layout('PLAY', lerp(WORD_W * .3, WORD_W, eOut(p(t, .25, .8))));
+  letters(Lw, W / 2, H / 2, (i, l) => { const k = eBack(clamp(m * 1.5 - i * .12)); return { a: clamp(k * 1.2), dx: lerp(-l.x, 0, k), shadowColor: 'rgba(255,170,60,.9)' }; });
+  fill(NAVY, eIn(p(t, .8, 1.0)));
+}
+// ② PLAY 버스트 (1.0–2.6): 글자 창 속 장면 교차 → L 속으로 급줌
+const WIN = ['prayer', 'ski', 'moon', 'head', 'stadium'];
+function bLetters(t) {
+  const lt = t - 1.0;
+  const bg = ctx.createLinearGradient(0, 0, 0, H); bg.addColorStop(0, NAVY); bg.addColorStop(1, '#241C8C'); ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
+  stars(t, .7);
+  const Lw = layout('PLAY', WORD_W * lerp(1, 1.06, lt / 1.6));
+  const beat = Math.floor(lt / .2);
+  const lockL = lt > .9;                              // 줌 직전 L은 스키로 고정 → 줌이 끝나면 그대로 스키 장면
+  const imgOf = i => (lockL && i === 1) ? IMG.ski : IMG[WIN[(i * 2 + beat) % WIN.length]];
+  const l = Lw.L[1]; const zx = W / 2 + l.x - l.w * .22, zy = H / 2 + Lw.size * .36 - Lw.size * .38;   // L 세로획 중앙
+  const z = 1 + 60 * eIn(p(lt, .95, 1.6));
+  const [sx, sy] = shake(t, 1.0 + Math.min(beat, 4) * .2, 6);
+  ctx.save(); ctx.translate(sx, sy);
+  letterWindows(Lw, W / 2, H / 2, imgOf, z, zx, zy, 1 - p(lt, .95, 1.3));
+  ctx.restore();
+  for (let b = 0; b < 5; b++) flash(t, 1.0 + b * .2, .06, .25);
+}
+// ③ 스키 (2.6–4.4): 활강 패닝 → 장갑 인서트 → 급정지 눈보라
+function cSki(t) {
+  const lt = t - 2.6;
+  if (lt < .9) {
+    const k = eOut(p(lt, 0, .9));
+    draw(IMG.ski, place(IMG.ski, { scale: lerp(1.02, 1.12, k), fx: .5, dx: lerp(.04, -.04, k) }));
+    speedLines(t, .35 * (1 - k * .5));
+  } else if (lt < 1.2) {
+    const k = p(lt, .9, 1.2); draw(IMG.gloves, place(IMG.gloves, { scale: 1.06 + .1 * eIn(k), fx: .5 }));
+    flash(t, 3.5, .05, .4);
+  } else {
+    const k = p(lt, 1.2, 1.8); const [sx, sy] = shake(t, 3.8, 14);
+    ctx.save(); ctx.translate(sx, sy); draw(IMG.stop, place(IMG.stop, { scale: 1.08 + .08 * k, fx: .42 })); ctx.restore();
+    snowBurst(p(lt, 1.15, 1.75)); fill('#FAFCFF', eIO(p(lt, 1.5, 1.8)));
+  }
+}
+// ④ 산사 (4.4–5.6): 합장 → 숙이는 동작에 컷 → 별빛 상승
+function dTemple(t) {
+  const lt = t - 4.4;
+  if (lt < .55) { draw(IMG.prayer, place(IMG.prayer, { scale: 1.03 + .04 * lt, fx: .42 })); fill('#FAFCFF', 1 - eOut(p(lt, 0, .25))); }
+  else { const k = eOut(p(lt, .55, .9)); draw(IMG.bow, place(IMG.bow, { scale: 1.05 + .04 * lt, fx: .33, dy: lerp(-.03, 0, k) })); }
+  sparkles(p(lt, .75, 1.2), '255,220,150', .4);
+  fill('#05061A', eIn(p(lt, .95, 1.2)) * .9);
+}
+// ⑤ 달 (5.6–7.0): 무중력 부유 → 별 섬광
+function eMoon(t) {
+  const lt = t - 5.6;
+  ctx.save(); ctx.translate(W / 2, H / 2); ctx.rotate(lerp(-.02, .02, lt / 1.4)); ctx.translate(-W / 2, -H / 2);
+  draw(IMG.moon, place(IMG.moon, { scale: 1.08 + .04 * lt, fx: .45, dy: lerp(.03, -.03, eIO(lt / 1.4)) })); ctx.restore();
+  fill('#05061A', 1 - eOut(p(lt, 0, .3)));
+  const f = p(lt, .9, 1.4); glow(W / 2, H * .5, (80 + 1700 * eIn(f)) * K, '220,230,255', f); fill('#EEF3FF', eIn(p(lt, 1.2, 1.4)));
+}
+// ⑥ 레이싱 (7.0–8.4): 헤드라이트 돌진 → 오른쪽에서 튀어나오는 통과 → 왼쪽 휩팬
+function fRace(t) {
+  const lt = t - 7.0;
+  if (lt < .6) {
+    draw(IMG.head, place(IMG.head, { scale: 1.02 + .25 * eIn(lt / .6), fx: .5 }));
+    fill('#EEF3FF', 1 - eOut(p(lt, 0, .2))); speedLines(t, .3 * p(lt, .2, .6));
+  } else {
+    const l2 = lt - .6; const inK = eOut(p(l2, 0, .18)); const out = eIn(p(l2, .55, .8));
+    fill('#EEF3FF');
+    const tf = place(IMG.pass, { scale: 1.06, fx: .45, dx: (1 - inK) * 1.0 - out * .5, free: true });
+    draw(IMG.pass, tf, `blur(${(2 + 30 * out + 10 * (1 - inK)) * K}px)`);
+    speedLines(t, .5);
+  }
+}
+// ⑦ 야구장 (8.4–10): 같은 방향 휩팬으로 도착 → 카드 섹션 PLAY
+function gStadium(t) {
+  const lt = t - 8.4; const arrive = 1 - eOut(p(lt, 0, .3));
+  const fx = V ? lerp(.3, .7, eIO(p(lt, .3, 1.6))) : .5;
+  const o = { scale: 1.04 + .05 * eIO(lt / 1.6), fx };
+  const [sx, sy] = shake(t, 8.7, 8);
+  if (arrive > 0) fill('#EEF3FF');                     // 휩팬으로 밀려 들어올 때 생기는 빈 곳을 앞 컷과 같은 빛으로
+  ctx.save(); ctx.translate(sx, sy);
+  draw(IMG.stadium, place(IMG.stadium, { ...o, dx: arrive * .4, free: arrive > 0 }), arrive > .01 ? `blur(${30 * arrive * K}px)` : null);
+  if (arrive <= .01) { mosaic(W / 2, H * .2, V ? W * .96 : W * .62, p(lt, .3, .9)); draw(IMG.stadiumCut, place(IMG.stadiumCut, o)); }
+  ctx.restore();
+  confetti(t); flash(t, 8.7, .07, .35);
+}
+
+const SHOTS = [[0, 1.0, aBurst], [1.0, 2.6, bLetters], [2.6, 4.4, cSki], [4.4, 5.6, dTemple], [5.6, 7.0, eMoon], [7.0, 8.4, fRace], [8.4, 10.01, gStadium]];
+window.renderAt = async (t) => {
+  ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1; ctx.filter = 'none'; ctx.shadowBlur = 0; ctx.shadowOffsetY = 0;
+  ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, H);
+  const s = SHOTS.find(([a, b]) => t >= a && t < b) || SHOTS[SHOTS.length - 1];
+  s[2](t);
+  badge(1);
+};
+(async () => {
+  try {
+    const A = 'assets/';
+    await Promise.all([
+      load('tapB', A + 'S02_C02_B.png'), load('prayer', A + 'S05_C02_prayer.png'), load('bow', A + 'S05_C02_bow.png'),
+      load('ski', A + 'S05_C01_ski_run.png'), load('gloves', A + 'S05_C01_gloves.png'), load('stop', A + 'S05_C01_stop.png'),
+      load('moon', A + 'S05_C03_moon.png'), load('head', A + 'S05_C04_headlight.png'), load('pass', A + 'S05_C04_passby.png'),
+      load('stadium', A + 'S05_C05_stadium.png'), load('stadiumCut', A + 'S05_C05_stadium_cut.png'),
+    ]);
+    await Promise.all([document.fonts.load(FP(200)), document.fonts.load('700 40px Inter')]); await document.fonts.ready;
+    buildMosaic();
+    window.ASSETS = { aspect: V ? '9x16' : '16x9', images: Object.keys(IMG).length, font: document.fonts.check(FP(100)) };
+    await window.renderAt(0); window.READY = true;
+  } catch (e) { window.ERR = String(e); }
+})();
+</script>
+</body>
+</html>
