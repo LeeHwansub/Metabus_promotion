@@ -7,15 +7,16 @@
   시네마틱 S02_C01(04컷) 폰 화면에 입히는 초대 카드. 540x1000(화면 비율) 투명 배경 PNG 시퀀스로 렌더해
   edit/invite_overlay.sh 가 화면 위치 · 크기를 프레임마다 따라 붙인다.
   문구는 스토리보드 S02 그대로. HyperFrames 형식(GSAP 타임라인 1개, window.__timelines["invite"]).
-  0.00 카드가 아래에서 떠오름 → 0.10~0.30 줄마다 등장 → 0.50 버튼 위로 빛 한 번 → 0.95 버튼 살짝 눌림(터치 직전 느낌)
+  v2(실제 알림처럼): 화면 위쪽 다이내믹 아일랜드 아래, 폭 92%. 0.00 살짝 내려오며 나타남 → 줄마다 등장 → 0.50 버튼 위 빛 한 번.
+  (v1의 확대 0.94→1 · 버튼 눌림은 합성 후 흔들려 보여서 뺌)
 -->
 <style>
   @font-face { font-family: "Noto Sans KR"; src: url("assets/fonts/NotoSansKR-Variable.ttf") format("truetype"); font-weight: 100 900; font-display: block; }
   @font-face { font-family: "Nunito"; src: url("assets/fonts/Nunito-Variable.ttf") format("truetype"); font-weight: 200 1000; font-display: block; }
   html, body { margin: 0; background: transparent; overflow: hidden; }
   #root { position: relative; width: 540px; height: 1000px; overflow: hidden; font-family: "Noto Sans KR", sans-serif; }
-  #shade { position: absolute; inset: 0; background: radial-gradient(ellipse 90% 60% at 50% 62%, rgba(10,8,40,.38), rgba(10,8,40,0) 70%); }
-  #card { position: absolute; left: 42px; right: 42px; top: 470px; padding: 26px 26px 24px; border-radius: 30px;
+  #shade { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(10,8,40,.30) 0%, rgba(10,8,40,.10) 45%, rgba(10,8,40,0) 70%); }
+  #card { position: absolute; left: 22px; right: 22px; top: 92px; padding: 28px 28px 26px; border-radius: 34px;
           background: linear-gradient(160deg, rgba(34,30,92,.78), rgba(14,12,52,.84));
           border: 1.5px solid rgba(255,255,255,.28); box-shadow: 0 24px 60px rgba(0,0,30,.45), inset 0 1px 0 rgba(255,255,255,.25); }
   .head { display: flex; align-items: center; gap: 10px; }
@@ -52,14 +53,13 @@
 <script>
 (() => {
   const tl = gsap.timeline({ paused: true });
-  gsap.set('#card', { y: 60, opacity: 0, scale: .94, transformOrigin: '50% 60%' });
-  gsap.set(['#head', '#title', '#bodytxt', '#btn'], { y: 14, opacity: 0 });
+  gsap.set('#card', { y: -22, opacity: 0 });
+  gsap.set(['#head', '#title', '#bodytxt', '#btn'], { y: 8, opacity: 0 });
   gsap.set('#shade', { opacity: 0 });
   tl.to('#shade', { opacity: 1, duration: .3, ease: 'power2.out' }, 0);
-  tl.to('#card', { y: 0, opacity: 1, scale: 1, duration: .38, ease: 'expo.out' }, 0);
+  tl.to('#card', { y: 0, opacity: 1, duration: .32, ease: 'power3.out' }, 0);
   tl.to(['#head', '#title', '#bodytxt', '#btn'], { y: 0, opacity: 1, duration: .3, ease: 'power3.out', stagger: .06 }, .08);
   tl.to('#shine', { left: 520, duration: .45, ease: 'power2.inOut' }, .5);
-  tl.to('#btn', { scale: .96, duration: .12, ease: 'power2.out' }, .95).to('#btn', { scale: 1, duration: .2, ease: 'power2.out' }, 1.07);
   tl.set({}, {}, 1.4);
   window.__timelines = window.__timelines || {}; window.__timelines['invite'] = tl;
   window.renderAt = async (t) => { tl.seek(Math.min(t, 1.399), false); };
