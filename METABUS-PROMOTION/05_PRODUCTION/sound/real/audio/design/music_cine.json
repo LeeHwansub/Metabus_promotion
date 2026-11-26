@@ -1,0 +1,45 @@
+{
+ "_doc": "시네마틱: PLAY와 같은 곡 · 같은 4구간, 마디선을 -1.125초로 밀어 드롭(src 26)을 16.875초 스키 컷에",
+ "music": {
+  "file": "audio/assets/music/mixkit-1012_take-this-higher.mp3",
+  "src_bpm": 123.991,
+  "target_bpm": 120.0,
+  "stretch": "rubberband",
+  "gain_db": 0.0,
+  "segments": [
+   {
+    "label": "src 0-4 인트로(조용→상승) → film -1~9 현실 · PLAY 폭발",
+    "src_from": 1.9299,
+    "src_to": 11.608,
+    "at": -1.125,
+    "fade_in": 0.008,
+    "fade_out": 0.06
+   },
+   {
+    "label": "src 22-26 → film 8.875~18.875, 드롭 16.875초(스키)",
+    "src_from": 44.5137,
+    "src_to": 54.1918,
+    "at": 8.875,
+    "fade_in": 0.008,
+    "fade_out": 0.06
+   },
+   {
+    "label": "src 19-21 메인 그루브 → film 19~25 산사·달·레이싱",
+    "src_from": 38.7068,
+    "src_to": 44.5137,
+    "at": 18.875,
+    "fade_in": 0.008,
+    "fade_out": 0.06
+   },
+   {
+    "label": "src 44-46 아웃트로 → film 25~31 야구장·엔딩, 마지막 화음 감쇠",
+    "src_from": 87.0977,
+    "src_to": 92.9046,
+    "at": 24.875,
+    "fade_in": 0.008,
+    "fade_out": 0.06,
+    "tail_fade": 1.8
+   }
+  ]
+ }
+}

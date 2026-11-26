@@ -1,0 +1,41 @@
+{
+ "_doc": "시네마틱 30초 (edit/cinematic_30s.sh SPEC 프레임 합산) · 24fps",
+ "fps": 24,
+ "bpm": 120,
+ "total": 720,
+ "events": [
+  {
+   "f": 140.0,
+   "kind": "pop",
+   "weight": 0.7,
+   "id": "s02:phone:notify"
+  },
+  {
+   "f": 321.0,
+   "kind": "riser",
+   "weight": 1.0,
+   "dur": 35,
+   "id": "s03:door:light"
+  },
+  {
+   "f": 476.4,
+   "kind": "whoosh",
+   "weight": 1.0,
+   "dur": 12,
+   "id": "s05:ski:snow"
+  },
+  {
+   "f": 589.2,
+   "kind": "pass",
+   "weight": 1.0,
+   "id": "s05:race:passby",
+   "pan": 0.4
+  },
+  {
+   "f": 648.0,
+   "kind": "hit",
+   "weight": 1.0,
+   "id": "s06:logo:in"
+  }
+ ]
+}

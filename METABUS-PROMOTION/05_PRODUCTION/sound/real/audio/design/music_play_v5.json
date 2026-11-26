@@ -1,0 +1,45 @@
+{
+ "_doc": "PLAY v5: 드롭(원곡 26마디)을 15초 스키 컷에. 인트로 5마디 → 그루브 22마디(버스 9초, v4.2와 같은 이음) · 23마디 건너뛰고 24~25 → 드롭 26~28마디(체험) → 아웃트로(야구장 21초~, 엔딩 슬램 22초)",
+ "music": {
+  "file": "audio/assets/music/mixkit-1012_take-this-higher.mp3",
+  "src_bpm": 123.991,
+  "target_bpm": 120.0,
+  "stretch": "rubberband",
+  "gain_db": 0.0,
+  "segments": [
+   {
+    "label": "src 0-4 인트로 → film -1~9 현실 · PLAY 폭발",
+    "src_from": 1.9299,
+    "src_to": 11.608,
+    "at": -1.0,
+    "fade_in": 0.008,
+    "fade_out": 0.06
+   },
+   {
+    "label": "src 22 그루브 1마디 → film 9~11 버스",
+    "src_from": 44.5137,
+    "src_to": 46.4493,
+    "at": 9.0,
+    "fade_in": 0.008,
+    "fade_out": 0.06
+   },
+   {
+    "label": "src 24-28 그루브→드롭 → film 11~21, 드롭 15초(스키)",
+    "src_from": 48.385,
+    "src_to": 58.0631,
+    "at": 11.0,
+    "fade_in": 0.008,
+    "fade_out": 0.06
+   },
+   {
+    "label": "src 44-46 아웃트로 → film 21~ 야구장·엔딩(슬램 22초), 감쇠",
+    "src_from": 87.0975,
+    "src_to": 92.9044,
+    "at": 21.0,
+    "fade_in": 0.008,
+    "fade_out": 0.06,
+    "tail_fade": 1.8
+   }
+  ]
+ }
+}

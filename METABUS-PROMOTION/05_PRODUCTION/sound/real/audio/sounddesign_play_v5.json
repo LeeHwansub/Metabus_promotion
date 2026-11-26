@@ -1,0 +1,72 @@
+{
+ "_doc": "metaBus PLAY v5 사운드트랙 (26초, 엔딩 슬램 22초). 큐: out/cues_play_v5.json",
+ "duration": 26.0,
+ "cues": "out/cues_play_v5.json",
+ "include": [
+  "audio/design/music_play_v5.json",
+  "audio/design/sfx_play_v5.json"
+ ],
+ "_buses_doc": "v4.2와 같은 설계를 4초 당김: 슬램 직전 0.3초 -8 dB(21.7→22.0), 로고(23.8~) 아래 -3 dB, 25.25→25.95 무음까지 페이드.",
+ "buses": {
+  "music": {
+   "gain_db": 0.0,
+   "auto": [
+    [
+     0,
+     -40
+    ],
+    [
+     0.05,
+     0
+    ],
+    [
+     21.55,
+     0
+    ],
+    [
+     21.7,
+     -8
+    ],
+    [
+     21.98,
+     -8
+    ],
+    [
+     22.02,
+     0
+    ],
+    [
+     23.8,
+     0
+    ],
+    [
+     24.4,
+     -3
+    ],
+    [
+     25.25,
+     -3
+    ],
+    [
+     25.95,
+     -70
+    ],
+    [
+     26.0,
+     -70
+    ]
+   ]
+  },
+  "amb": {
+   "gain_db": 0.0
+  },
+  "sfx": {
+   "gain_db": 0.0
+  }
+ },
+ "master": {
+  "lufs": -14,
+  "ceiling": 0.77,
+  "no_glue": true
+ }
+}

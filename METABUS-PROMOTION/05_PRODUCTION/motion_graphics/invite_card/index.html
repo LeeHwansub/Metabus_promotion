@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>metaBus invite card</title>
+<!--
+  시네마틱 S02_C01(04컷) 폰 화면에 입히는 초대 카드. 540x1000(화면 비율) 투명 배경 PNG 시퀀스로 렌더해
+  edit/invite_overlay.sh 가 화면 위치 · 크기를 프레임마다 따라 붙인다.
+  문구는 스토리보드 S02 그대로. HyperFrames 형식(GSAP 타임라인 1개, window.__timelines["invite"]).
+  v2(실제 알림처럼): 화면 위쪽 다이내믹 아일랜드 아래, 폭 92%. 0.00 살짝 내려오며 나타남 → 줄마다 등장 → 0.50 버튼 위 빛 한 번.
+  (v1의 확대 0.94→1 · 버튼 눌림은 합성 후 흔들려 보여서 뺌)
+-->
+<style>
+  @font-face { font-family: "Noto Sans KR"; src: url("assets/fonts/NotoSansKR-Variable.ttf") format("truetype"); font-weight: 100 900; font-display: block; }
+  @font-face { font-family: "Nunito"; src: url("assets/fonts/Nunito-Variable.ttf") format("truetype"); font-weight: 200 1000; font-display: block; }
+  html, body { margin: 0; background: transparent; overflow: hidden; }
+  #root { position: relative; width: 540px; height: 1000px; overflow: hidden; font-family: "Noto Sans KR", sans-serif; }
+  #shade { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(10,8,40,.30) 0%, rgba(10,8,40,.10) 45%, rgba(10,8,40,0) 70%); }
+  #card { position: absolute; left: 22px; right: 22px; top: 92px; padding: 28px 28px 26px; border-radius: 34px;
+          background: linear-gradient(160deg, rgba(34,30,92,.78), rgba(14,12,52,.84));
+          border: 1.5px solid rgba(255,255,255,.28); box-shadow: 0 24px 60px rgba(0,0,30,.45), inset 0 1px 0 rgba(255,255,255,.25); }
+  .head { display: flex; align-items: center; gap: 10px; }
+  .head svg { width: 44px; height: 31px; flex: none; }
+  .brand { font: 800 23px/1 "Nunito", sans-serif; color: #fff; letter-spacing: -.01em; }
+  .now { margin-left: auto; font-size: 15px; color: rgba(235,232,255,.6); }
+  .title { margin-top: 20px; font-size: 25px; font-weight: 800; line-height: 1.35; color: #fff; letter-spacing: -.02em; }
+  .body { margin-top: 6px; font-size: 18px; font-weight: 500; color: rgba(235,232,255,.78); letter-spacing: -.01em; }
+  #btn { position: relative; overflow: hidden; margin-top: 22px; height: 58px; border-radius: 29px; display: grid; place-items: center;
+         background: linear-gradient(90deg, #5A5AE0, #8C6AFA); box-shadow: 0 10px 26px rgba(110,90,250,.45); }
+  #btn span { font-size: 21px; font-weight: 800; color: #fff; letter-spacing: .02em; }
+  #shine { position: absolute; top: -20px; bottom: -20px; width: 70px; left: -120px; transform: skewX(-20deg);
+           background: linear-gradient(90deg, rgba(255,255,255,0), rgba(255,255,255,.55), rgba(255,255,255,0)); }
+</style>
+</head>
+<body>
+<div id="root" data-composition-id="invite" data-width="540" data-height="1000" data-start="0" data-duration="1.4" data-fps="24">
+  <div id="shade" class="clip" data-start="0" data-duration="1.4"></div>
+  <div id="card" class="clip" data-start="0" data-duration="1.4">
+    <div class="head" id="head">
+      <svg viewBox="4 8 64 44" xmlns="http://www.w3.org/2000/svg">
+        <path fill="#FCC024" d="M11,8 H61 A7,7 0 0 1 68,15 V23.0 A7,7 0 0 0 68,37.0 V45 A7,7 0 0 1 61,52 H11 A7,7 0 0 1 4,45 V37.0 A7,7 0 0 0 4,23.0 V15 A7,7 0 0 1 11,8 Z"/>
+        <path fill="#10121D" d="M18.366 40.0H21.824V31.966C21.824 30.12 21.512 27.468 21.33 25.648H21.434L22.968 30.172L25.958 38.258H28.168L31.132 30.172L32.692 25.648H32.822C32.614 27.468 32.328 30.12 32.328 31.966V40.0H35.838V20.734H31.574L28.35 29.782C27.96 30.952 27.622 32.226 27.206 33.448H27.076C26.686 32.226 26.322 30.952 25.906 29.782L22.63 20.734H18.366Z"/>
+        <rect x="51" y="15" width="3.2" height="3.6" fill="#10121D"/><rect x="51" y="21.4" width="3.2" height="3.6" fill="#10121D"/><rect x="51" y="27.8" width="3.2" height="3.6" fill="#10121D"/><rect x="51" y="34.2" width="3.2" height="3.6" fill="#10121D"/><rect x="51" y="40.6" width="3.2" height="3.6" fill="#10121D"/>
+      </svg>
+      <span class="brand">metaBus</span><span class="now">지금</span>
+    </div>
+    <div class="title" id="title">새로운 경험이<br>기다리고 있습니다.</div>
+    <div class="body" id="bodytxt">metaBus에 참여하시겠습니까?</div>
+    <div id="btn"><div id="shine"></div><span>참여하기</span></div>
+  </div>
+</div>
+<script src="assets/gsap.min.js"></script>
+<script>
+(() => {
+  const tl = gsap.timeline({ paused: true });
+  gsap.set('#card', { y: -22, opacity: 0 });
+  gsap.set(['#head', '#title', '#bodytxt', '#btn'], { y: 8, opacity: 0 });
+  gsap.set('#shade', { opacity: 0 });
+  tl.to('#shade', { opacity: 1, duration: .3, ease: 'power2.out' }, 0);
+  tl.to('#card', { y: 0, opacity: 1, duration: .32, ease: 'power3.out' }, 0);
+  tl.to(['#head', '#title', '#bodytxt', '#btn'], { y: 0, opacity: 1, duration: .3, ease: 'power3.out', stagger: .06 }, .08);
+  tl.to('#shine', { left: 520, duration: .45, ease: 'power2.inOut' }, .5);
+  tl.set({}, {}, 1.4);
+  window.__timelines = window.__timelines || {}; window.__timelines['invite'] = tl;
+  window.renderAt = async (t) => { tl.seek(Math.min(t, 1.399), false); };
+  document.fonts.ready.then(() => { tl.seek(0, false); window.ASSETS = { kr: document.fonts.check('800 25px "Noto Sans KR"') }; window.READY = true; });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,155 @@
+{
+ "placements": [
+  {
+   "t": 6.04,
+   "event": "s02:phone:notify",
+   "kind": "pop",
+   "rule": "phone notify",
+   "sample": "noti",
+   "gain_db": -12.0,
+   "pitch": 0,
+   "pitch_total": 0,
+   "pan": 0.0,
+   "align": "attack"
+  },
+  {
+   "t": 8.42,
+   "event": "s02:play:burst",
+   "kind": "hit",
+   "rule": "play burst",
+   "sample": "zoom_hit",
+   "gain_db": -6.0,
+   "pitch": 0,
+   "pitch_total": 0,
+   "pan": 0.0,
+   "align": "attack"
+  },
+  {
+   "t": 13.0,
+   "event": "s03:door:light",
+   "kind": "riser",
+   "rule": "door light",
+   "sample": "riser",
+   "gain_db": -7.0,
+   "pitch": 0,
+   "pitch_total": 0,
+   "pan": 0.0,
+   "align": "end"
+  },
+  {
+   "t": 18.4208,
+   "event": "s05:ski:snow",
+   "kind": "whoosh",
+   "rule": "ski snow",
+   "sample": "snow_whoosh",
+   "gain_db": -8.0,
+   "pitch": 0,
+   "pitch_total": 0,
+   "pan": 0.2,
+   "align": "peak"
+  },
+  {
+   "t": 23.2,
+   "event": "s05:race:passby",
+   "kind": "pass",
+   "rule": "race pass",
+   "sample": "car_pass",
+   "gain_db": -6.0,
+   "pitch": 0,
+   "pitch_total": 0,
+   "pan": 0.4,
+   "align": "peak"
+  },
+  {
+   "t": 25.92,
+   "event": "s06:play:slam",
+   "kind": "hit",
+   "rule": "ending slam",
+   "sample": "epic_hit",
+   "gain_db": -5.0,
+   "pitch": 0,
+   "pitch_total": 0,
+   "pan": 0.0,
+   "align": "attack"
+  }
+ ],
+ "unsounded_events": [],
+ "buses": {
+  "sfx": {
+   "peak_dbfs": -8.0,
+   "rms_dbfs": -31.03
+  },
+  "amb": {
+   "peak_dbfs": -10.42,
+   "rms_dbfs": -32.35
+  },
+  "music": {
+   "peak_dbfs": 2.39,
+   "rms_dbfs": -17.19
+  }
+ },
+ "ambience": [
+  {
+   "name": "stadium crowd",
+   "file": "audio/assets/ambience/mk-462_huge-crowd-cheering-victory.wav",
+   "at": 23.95,
+   "until": 26.3,
+   "looped": false,
+   "body_rms_dbfs": -20.2
+  }
+ ],
+ "music_segments": [
+  {
+   "label": "src 0-4 \uc778\ud2b8\ub85c(\uc870\uc6a9\u2192\uc0c1\uc2b9) \u2192 film -1~9 \ud604\uc2e4 \u00b7 PLAY \ud3ed\ubc1c",
+   "src_from": 1.9299,
+   "src_to": 11.608,
+   "at": -1.0,
+   "fade_in": 0.008,
+   "fade_out": 0.06,
+   "stretched_from": 1.9861,
+   "film_start": -1.008
+  },
+  {
+   "label": "src 22-26 \uadf8\ub8e8\ube0c\u2192\ube0c\ub808\uc774\ud06c\ub2e4\uc6b4\u2192\ub4dc\ub86d \u2192 film 9~19, \ub4dc\ub86d 17\ucd08(\uc2a4\ud0a4)",
+   "src_from": 44.5137,
+   "src_to": 54.1918,
+   "at": 9.0,
+   "fade_in": 0.008,
+   "fade_out": 0.06,
+   "stretched_from": 45.9861,
+   "film_start": 8.992
+  },
+  {
+   "label": "src 19-21 \uba54\uc778 \uadf8\ub8e8\ube0c \u2192 film 19~25 \uc0b0\uc0ac\u00b7\ub2ec\u00b7\ub808\uc774\uc2f1",
+   "src_from": 38.7068,
+   "src_to": 44.5137,
+   "at": 19.0,
+   "fade_in": 0.008,
+   "fade_out": 0.06,
+   "stretched_from": 39.9861,
+   "film_start": 18.992
+  },
+  {
+   "label": "src 44-46 \uc544\uc6c3\ud2b8\ub85c \u2192 film 25~31 \uc57c\uad6c\uc7a5\u00b7\uc5d4\ub529, \ub9c8\uc9c0\ub9c9 \ud654\uc74c \uac10\uc1e0",
+   "src_from": 87.0977,
+   "src_to": 92.9046,
+   "at": 25.0,
+   "fade_in": 0.008,
+   "fade_out": 0.06,
+   "tail_fade": 1.8,
+   "stretched_from": 89.9864,
+   "film_start": 24.992
+  }
+ ],
+ "files_used": [
+  "audio/assets/ambience/mk-462_huge-crowd-cheering-victory.wav",
+  "audio/assets/foley/mk-1538_fast-car-drive-by.wav",
+  "audio/assets/impacts/mk-2908_movie-trailer-epic-impact.wav",
+  "audio/assets/impacts/mk-772_quick-zoom-impact.wav",
+  "audio/assets/motion/mk-1490_fast-whoosh-transition.wav",
+  "audio/assets/motion/mk-790_cinematic-trailer-riser.wav",
+  "audio/assets/music/mixkit-1012_take-this-higher.mp3",
+  "audio/assets/ui/mk-2356_dry-pop-up-notification.wav"
+ ],
+ "premaster_peak_dbfs": 2.58
+}

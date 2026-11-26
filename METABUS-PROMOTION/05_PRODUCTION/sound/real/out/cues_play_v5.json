@@ -1,0 +1,47 @@
+{
+ "_doc": "모션그래픽 PLAY v5 (play_30s_v4/index-v5.html: 07컷 → 06컷, 버스·체험 빨리 감기, 야구장 2.25초, 엔딩 22초) 총 624f = 26초 · 24fps",
+ "fps": 24,
+ "bpm": 120,
+ "total": 624,
+ "events": [
+  {
+   "f": 146.4,
+   "kind": "pop",
+   "weight": 0.7,
+   "id": "s02:phone:notify"
+  },
+  {
+   "f": 204.0,
+   "kind": "hit",
+   "weight": 1.2,
+   "id": "s02:play:burst"
+  },
+  {
+   "f": 284.0,
+   "kind": "riser",
+   "weight": 1.0,
+   "dur": 26,
+   "id": "s03:door:light"
+  },
+  {
+   "f": 384.1,
+   "kind": "whoosh",
+   "weight": 1.0,
+   "dur": 10,
+   "id": "s05:ski:snow"
+  },
+  {
+   "f": 461.2,
+   "kind": "pass",
+   "weight": 1.0,
+   "id": "s05:race:passby",
+   "pan": 0.4
+  },
+  {
+   "f": 528.0,
+   "kind": "hit",
+   "weight": 1.5,
+   "id": "s06:play:slam"
+  }
+ ]
+}
