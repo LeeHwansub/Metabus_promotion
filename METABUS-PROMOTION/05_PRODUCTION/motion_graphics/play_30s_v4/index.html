@@ -1,0 +1,493 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>metaBus PLAY 30s v4</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Noto+Sans+KR:wght@500;700;900&family=Nunito:wght@800&family=Inter:wght@700&display=block" rel="stylesheet">
+<style>html,body{margin:0;background:#000;overflow:hidden}canvas{display:block}</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<script src="clips/clip.js"></script>
+<script>
+// metaBus 모션그래픽 PLAY 버전 v4 · 30초 — v2(A안) PLAY 구성 그대로, 스틸 이미지를 Higgsfield 생성 영상 컷으로 교체
+// 방식: 장면 함수는 그대로 두고 renderAt에서 그 장면이 쓰는 IMG.키를 해당 시점의 영상 프레임(+누끼)으로 바꿔 끼움 (bindVideo)
+// v2 대비 변경: 버스 LED 'PLAY' 제거(움직이는 버스에 고정 좌표라 어긋남) · 산사 합장→절 프레이밍 통일 · 야구장 아래 깨진 글자 화면 밖으로
+// 이하 v2 설명 —
+// metaBus 모션그래픽 PLAY 버전 v2 · 30초 (V02 16컷 위에 'PLAY' 타이포 변주)
+// v2(A안): 큰 PLAY는 4번만 — ① S02 초대(▶→PLAY) ② S05 스키 ③ S05 야구장 카드 섹션 ④ S06 엔딩
+//          장면 속 작은 글자는 유지 — S01 폰 속 ▶, S03 버스 LED 전광판
+//          산사 · 달 · 레이싱 · 하늘 통과 · 버스 뒤 큰 글자는 뺌 (v1은 9번 등장해 과함)
+// ?a=16x9 | 9x16  · window.renderAt(t) 로 프레임 렌더 (render.mjs)
+const Q = new URLSearchParams(location.search);
+const V = Q.get('a') === '9x16';
+const W = V ? 1080 : 1920, H = V ? 1920 : 1080;
+const K = Math.min(W, H) / 1080;                       // 길이 단위 기준
+const cv = document.getElementById('c'); cv.width = W; cv.height = H;
+const ctx = cv.getContext('2d');
+const FP = s => `400 ${s}px "Archivo Black"`;
+const NAVY = '#0C0C6C', YELLOW = '#FCC024';
+const REAL = 'saturate(.72) brightness(.86) contrast(1.05)';   // 현실 톤
+
+// ---------- 유틸
+const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
+const p = (t, a, b) => clamp((t - a) / (b - a));
+const lerp = (a, b, x) => a + (b - a) * x;
+const eOut = x => 1 - Math.pow(1 - x, 3);
+const eIn = x => x * x * x;
+const eIO = x => x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
+const eBack = x => { const c1 = 1.70158, c3 = c1 + 1; return 1 + c3 * Math.pow(x - 1, 3) + c1 * Math.pow(x - 1, 2); };
+function rng(seed) { return () => { seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646; }; }
+
+const IMG = {};
+const load = (k, src) => new Promise((res, rej) => { const i = new Image(); i.onload = () => { IMG[k] = i; res(); }; i.onerror = () => rej(new Error('image ' + src)); i.src = src; });
+
+// 이미지 배치: 화면을 덮도록, fx/fy = 이미지 안의 관심점(0~1), dx/dy = 화면 비율 이동
+function place(img, o = {}) {
+  const s = Math.max(W / img.width, H / img.height) * (o.scale || 1);
+  const w = img.width * s, h = img.height * s;
+  let x = W / 2 - (o.fx ?? .5) * w + (o.dx || 0) * W;
+  let y = H / 2 - (o.fy ?? .5) * h + (o.dy || 0) * H;
+  if (!o.free) { x = Math.min(0, Math.max(W - w, x)); y = Math.min(0, Math.max(H - h, y)); }
+  return { x, y, w, h, s };
+}
+function draw(img, tf, filter, alpha = 1) {
+  if (alpha <= 0) return;
+  ctx.save(); ctx.globalAlpha = alpha; if (filter) ctx.filter = filter;
+  ctx.drawImage(img, tf.x, tf.y, tf.w, tf.h); ctx.restore();
+}
+const pt = (tf, u, v) => [tf.x + u * tf.w, tf.y + v * tf.h];
+function fill(color, a = 1) { if (a <= 0) return; ctx.save(); ctx.globalAlpha = a; ctx.fillStyle = color; ctx.fillRect(0, 0, W, H); ctx.restore(); }
+function glow(x, y, r, rgb, a) {
+  if (a <= 0) return;
+  const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+  g.addColorStop(0, `rgba(${rgb},${a})`); g.addColorStop(.45, `rgba(${rgb},${a * .45})`); g.addColorStop(1, `rgba(${rgb},0)`);
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+}
+function vignette(a = .35) {
+  const g = ctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * .35, W / 2, H / 2, Math.max(W, H) * .75);
+  g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, `rgba(0,0,0,${a})`); ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+}
+function rr(x, y, w, h, r) { ctx.beginPath(); ctx.roundRect(x, y, w, h, r); }
+
+// ---------- PLAY 타이포
+function layout(word, targetW, track = .02) {
+  let size = 400; ctx.font = FP(size);
+  const raw = [...word].reduce((s, ch) => s + ctx.measureText(ch).width, 0) + size * track * (word.length - 1);
+  size *= targetW / raw; ctx.font = FP(size);
+  const ws = [...word].map(ch => ctx.measureText(ch).width);
+  const total = ws.reduce((a, b) => a + b, 0) + size * track * (word.length - 1);
+  let x = -total / 2; const L = [];
+  [...word].forEach((ch, i) => { L.push({ ch, x: x + ws[i] / 2 }); x += ws[i] + size * track; });
+  return { size, L, total };
+}
+// each(i) → {a, dx, dy, rot, sx, sy, blur, fill, shadow}
+function letters(Lw, cx, cy, each) {
+  ctx.save(); ctx.font = FP(Lw.size); ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+  const base = cy + Lw.size * .36;
+  Lw.L.forEach((l, i) => {
+    const o = each(i, l) || {}; const a = o.a ?? 1; if (a <= 0) return;
+    ctx.save(); ctx.globalAlpha = a;
+    ctx.translate(cx + l.x + (o.dx || 0), base + (o.dy || 0));
+    if (o.rot) ctx.rotate(o.rot);
+    if (o.sx || o.sy) ctx.scale(o.sx || 1, o.sy || 1);
+    if (o.blur) ctx.filter = `blur(${o.blur}px)`;
+    ctx.fillStyle = o.fill || '#fff';
+    if (o.shadow !== false) { ctx.shadowColor = o.shadowColor || 'rgba(12,12,108,.55)'; ctx.shadowBlur = 46 * K; ctx.shadowOffsetY = 10 * K; }
+    ctx.fillText(l.ch, 0, 0);
+    if (o.shadow !== false) { ctx.shadowColor = 'rgba(12,12,108,.25)'; ctx.shadowBlur = 8 * K; ctx.shadowOffsetY = 2 * K; ctx.fillText(l.ch, 0, 0); }
+    ctx.restore();
+  });
+  ctx.restore();
+}
+const WORD_W = V ? W * .9 : W * .84;
+
+// ---------- 입자
+const SNOW = (() => { const r = rng(7); return Array.from({ length: 900 }, () => ({ x: r(), y: r(), s: .4 + r() * 1.6, v: .6 + r() * .9, d: r() })); })();
+function snowBurst(k0) {
+  if (k0 <= 0) return;
+  ctx.save();
+  SNOW.forEach(q => {
+    const k = clamp(k0 * 1.3 - q.d * .35); if (k <= 0) return;
+    const x = lerp(W * (.75 + q.x * .3), W * (q.x * 1.2 - .1), eOut(k) * q.v);
+    const y = lerp(H * (.85 + q.y * .2), H * (q.y * 1.1 - .05), eOut(k));
+    if (q.s > 1.25) {
+      const s = (q.s - 1) * (60 + 220 * k) * K;
+      const g = ctx.createRadialGradient(x, y, 0, x, y, s);
+      g.addColorStop(0, `rgba(255,255,255,${.75 * k})`); g.addColorStop(.55, `rgba(245,246,255,${.35 * k})`); g.addColorStop(1, 'rgba(240,242,255,0)');
+      ctx.globalAlpha = 1; ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, s, 0, Math.PI * 2); ctx.fill();
+    } else {
+      const s = (1.5 + q.s * 4) * K; ctx.globalAlpha = .9 * (1 - k * .4); ctx.fillStyle = '#fff';
+      ctx.beginPath(); ctx.ellipse(x, y, s * 1.8, s, -.5, 0, Math.PI * 2); ctx.fill();
+    }
+  });
+  ctx.restore();
+}
+const SPARK = (() => { const r = rng(91); return Array.from({ length: 140 }, () => ({ x: r(), y: r(), s: r(), d: r(), w: r() })); })();
+function sparkles(k0, rgb = '255,214,140', rise = .25) {
+  if (k0 <= 0) return;
+  ctx.save();
+  SPARK.forEach(q => {
+    const k = clamp(k0 * 1.4 - q.d * .4); if (k <= 0) return;
+    const x = W * q.x + Math.sin(q.w * 9 + k * 4) * 12 * K, y = H * (q.y + .1) - rise * H * k;
+    const s = (2 + q.s * 5) * K * (.5 + k);
+    ctx.globalAlpha = Math.sin(Math.PI * clamp(k)) * .95;
+    const g = ctx.createRadialGradient(x, y, 0, x, y, s * 4); g.addColorStop(0, `rgba(${rgb},1)`); g.addColorStop(1, `rgba(${rgb},0)`);
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, s * 4, 0, Math.PI * 2); ctx.fill();
+  });
+  ctx.restore();
+}
+const CONF = (() => { const r = rng(55); const cols = ['#FCC024', '#906CFC', '#FFFFFF', '#6060E4']; return Array.from({ length: 160 }, () => ({ x: r(), y: r(), s: r(), c: cols[Math.floor(r() * 4)], w: r(), v: .4 + r() * .8 })); })();
+function confetti(t) {
+  ctx.save();
+  CONF.forEach(q => {
+    const y = ((q.y + t * .22 * q.v) % 1.1 - .05) * H, x = W * q.x + Math.sin(t * 3 + q.w * 10) * 22 * K;
+    ctx.save(); ctx.translate(x, y); ctx.rotate(t * 4 * q.v + q.w * 6); ctx.globalAlpha = .9;
+    ctx.fillStyle = q.c; ctx.fillRect(-6 * K, -3 * K, 12 * K * (.6 + q.s), 6 * K); ctx.restore();
+  });
+  ctx.restore();
+}
+const STARS = (() => { const r = rng(3); return Array.from({ length: 220 }, () => ({ x: r(), y: r(), s: r(), w: r() })); })();
+function stars(t, a = 1) {
+  ctx.save();
+  STARS.forEach(q => { ctx.globalAlpha = a * (.25 + .5 * (.5 + .5 * Math.sin(t * 2 + q.w * 20))); ctx.fillStyle = '#fff';
+    ctx.beginPath(); ctx.arc(q.x * W, q.y * H, (.6 + q.s * 1.6) * K, 0, Math.PI * 2); ctx.fill(); });
+  ctx.restore();
+}
+
+// ---------- 야구장 카드 섹션 (PLAY 모자이크) · 로고
+let MOSAIC = null;
+function buildMosaic() {
+  const cols = 72, rows = 20, c = document.createElement('canvas'); c.width = cols; c.height = rows;
+  const x = c.getContext('2d'); x.fillStyle = '#000'; x.font = `400 ${rows * 1.05}px "Archivo Black"`; x.textAlign = 'center'; x.textBaseline = 'middle';
+  x.fillText('PLAY', cols / 2, rows / 2 + 1);
+  const d = x.getImageData(0, 0, cols, rows).data; const cells = []; const r = rng(12);
+  for (let j = 0; j < rows; j++) for (let i = 0; i < cols; i++) {
+    const on = d[(j * cols + i) * 4 + 3] > 110;
+    cells.push({ i, j, on, c: on ? (r() < .82 ? YELLOW : '#FFFFFF') : (r() < .5 ? '#2A2280' : '#3B35A8'), d: r() });
+  }
+  MOSAIC = { cols, rows, cells };
+}
+function mosaic(cx, cy, w, k) {
+  const cs = w / MOSAIC.cols, x0 = cx - w / 2, y0 = cy - cs * MOSAIC.rows / 2;
+  ctx.save();
+  MOSAIC.cells.forEach(c => {
+    const f = eOut(clamp(k * 1.8 - (c.i / MOSAIC.cols) * .8 - c.d * .15)); if (f <= 0) return;
+    ctx.globalAlpha = c.on ? f : f * .85; ctx.fillStyle = c.c;
+    const sy = Math.abs(Math.cos((1 - f) * Math.PI / 2)); // 카드 뒤집힘
+    ctx.fillRect(x0 + c.i * cs + cs * .08, y0 + c.j * cs + cs * (1 - sy) / 2 + cs * .08, cs * .84, cs * .84 * sy);
+  });
+  ctx.restore();
+}
+// 버스 전광판 LED 점 글자
+const LED_POS = [.555, .265];          // S03_C01 이미지 안 전면 상단 위치 (테스트 프레임으로 맞춤)
+let LED = null;
+function buildLed() {
+  const cols = 44, rows = 11, c = document.createElement('canvas'); c.width = cols; c.height = rows;
+  const x = c.getContext('2d'); x.fillStyle = '#000'; x.font = `400 ${rows * 1.15}px "Archivo Black"`; x.textAlign = 'center'; x.textBaseline = 'middle';
+  x.fillText('PLAY', cols / 2, rows / 2 + .5);
+  const d = x.getImageData(0, 0, cols, rows).data; const on = [];
+  for (let j = 0; j < rows; j++) for (let i = 0; i < cols; i++) if (d[(j * cols + i) * 4 + 3] > 100) on.push([i, j]);
+  LED = { cols, rows, on };
+}
+function led(cx, cy, w, a, t) {
+  if (a <= 0) return;
+  const cs = w / (LED.cols + 4), h = cs * (LED.rows + 3);
+  ctx.save(); ctx.globalAlpha = a;
+  ctx.fillStyle = 'rgba(8,8,20,.92)'; rr(cx - w / 2, cy - h / 2, w, h, cs * 1.2); ctx.fill();
+  ctx.strokeStyle = 'rgba(255,255,255,.18)'; ctx.lineWidth = Math.max(1, cs * .25); ctx.stroke();
+  ctx.fillStyle = '#FFB321'; ctx.shadowColor = 'rgba(255,170,40,.95)'; ctx.shadowBlur = cs * 2.2;
+  const x0 = cx - LED.cols * cs / 2, y0 = cy - LED.rows * cs / 2;
+  LED.on.forEach(([i, j]) => { ctx.beginPath(); ctx.arc(x0 + (i + .5) * cs, y0 + (j + .5) * cs, cs * .38, 0, Math.PI * 2); ctx.fill(); });
+  ctx.restore();
+}
+// 공식 티켓 마크 (metabus_logo SVG 벡터) + 워드마크(임시 글꼴)
+const TICKET = new Path2D('M11,8 H61 A7,7 0 0 1 68,15 V23.0 A7,7 0 0 0 68,37.0 V45 A7,7 0 0 1 61,52 H11 A7,7 0 0 1 4,45 V37.0 A7,7 0 0 0 4,23.0 V15 A7,7 0 0 1 11,8 Z');
+const MGLYPH = new Path2D('M18.366 40.0H21.824V31.966C21.824 30.12 21.512 27.468 21.33 25.648H21.434L22.968 30.172L25.958 38.258H28.168L31.132 30.172L32.692 25.648H32.822C32.614 27.468 32.328 30.12 32.328 31.966V40.0H35.838V20.734H31.574L28.35 29.782C27.96 30.952 27.622 32.226 27.206 33.448H27.076C26.686 32.226 26.322 30.952 25.906 29.782L22.63 20.734H18.366Z');
+function logo(cx, cy, h, a) {
+  if (a <= 0) return;
+  const s = h / 44; ctx.save(); ctx.globalAlpha = a;
+  ctx.font = `800 ${h * 1.02}px Nunito`; const tw = ctx.measureText('metaBus').width;
+  const markW = 64 * s, gap = 18 * s, total = markW + gap + tw, x0 = cx - total / 2;
+  ctx.save(); ctx.translate(x0 - 4 * s, cy - 30 * s); ctx.scale(s, s);
+  ctx.fillStyle = '#F5AB3D'; ctx.fill(TICKET); ctx.fillStyle = '#10121D'; ctx.fill(MGLYPH);
+  for (let k = 0; k < 5; k++) ctx.fillRect(51, 15 + k * 6.4, 3.2, 3.6);
+  ctx.restore();
+  ctx.fillStyle = '#FFFFFF'; ctx.textBaseline = 'middle'; ctx.fillText('metaBus', x0 + markW + gap, cy + h * .04);
+  ctx.restore();
+}
+function badge(a) {
+  if (a <= 0) return;
+  ctx.save(); ctx.globalAlpha = a; const fs = 26 * K * (V ? 1.25 : 1);
+  ctx.font = `700 ${fs}px Inter, sans-serif`; const label = 'metabus.app';
+  const w = ctx.measureText(label).width + fs * 2, h = fs * 1.9, x = W - w - 44 * K, y = (V ? 120 : 44) * K;
+  ctx.fillStyle = 'rgba(12,12,108,.72)'; rr(x, y, w, h, h / 2); ctx.fill();
+  ctx.fillStyle = YELLOW; ctx.beginPath(); ctx.arc(x + fs * .85, y + h / 2, fs * .23, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#fff'; ctx.textBaseline = 'middle'; ctx.fillText(label, x + fs * 1.4, y + h / 2 + 1);
+  ctx.restore();
+}
+
+// ================= 컷 (V02 16컷 타이밍)
+// S01_C01 서윤 공부방 0–3
+function s01a(lt) {
+  const tf = place(IMG.s01a, { scale: 1.04 + .06 * eIO(lt / 3), fx: V ? .55 : .38, fy: .45 });   // v4: 9:16은 영상 속 서윤 얼굴(가로 55% 지점) 기준
+  draw(IMG.s01a, tf, REAL); vignette(.45);
+  fill('#000', 1 - eOut(p(lt, 0, .5)));
+}
+// S01_C02 준호 퇴근길 3–6 → 폰으로 줌
+function s01b(lt) {
+  const zk = eIn(p(lt, 2.1, 3.0));
+  const tf = place(IMG.s01b, { scale: 1.05 + .05 * p(lt, 0, 2.1) + 1.8 * zk, fx: V && lt < 1.95 ? .82 : lerp(.47, .515, zk), fy: lerp(.5, .6, zk) });   // v4: 9:16 정류장 와이드는 오른쪽 준호 기준
+  draw(IMG.s01b, tf, REAL); vignette(.4 * (1 - zk));
+  const [px, py] = pt(tf, .515, .6); const k = eOut(p(lt, 1.4, 1.9));
+  if (k > 0) {   // 폰 화면 속 작은 ▶ (복선)
+    glow(px, py, 60 * K * (1 + 3 * zk), '255,226,160', .55 * k);
+    const r = 9 * K * (1 + 3.5 * zk); ctx.save(); ctx.globalAlpha = k; ctx.fillStyle = '#fff'; ctx.beginPath();
+    ctx.moveTo(px - r * .45, py - r * .6); ctx.lineTo(px + r * .65, py); ctx.lineTo(px - r * .45, py + r * .6); ctx.closePath(); ctx.fill(); ctx.restore();
+  }
+  fill('#FFF6E4', eIn(p(lt, 2.75, 3.0)));
+}
+// S02_C01 초대 카드 6–7.5
+function s02a(lt) {
+  const tf = place(IMG.s02a, { scale: 1.02 + .05 * eIO(lt / 1.5), fx: .5 });
+  draw(IMG.s02a, tf, 'saturate(.85) brightness(.92)');
+  fill('#FFF6E4', 1 - eOut(p(lt, 0, .25)));
+  const [cx, cy] = pt(tf, .49, .52); const cw = Math.min(.17 * tf.w, W * .62), ch = cw * 1.28;
+  const k = eOut(p(lt, .12, .55)); if (k <= 0) return;
+  const press = Math.sin(Math.PI * p(lt, 1.05, 1.3));
+  ctx.save(); ctx.globalAlpha = k; ctx.translate(cx, cy + (1 - k) * ch * .35);
+  ctx.shadowColor = 'rgba(255,214,150,.6)'; ctx.shadowBlur = 40 * K;
+  ctx.fillStyle = 'rgba(255,255,255,.18)'; rr(-cw / 2, -ch / 2, cw, ch, cw * .09); ctx.fill();
+  ctx.shadowBlur = 0; ctx.strokeStyle = 'rgba(255,255,255,.65)'; ctx.lineWidth = Math.max(1.5, cw * .006); ctx.stroke();
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillStyle = YELLOW; ctx.font = `900 ${cw * .08}px "Noto Sans KR"`; ctx.fillText('metaBus', 0, -ch * .34);
+  ctx.fillStyle = '#fff'; ctx.font = `700 ${cw * .095}px "Noto Sans KR"`;
+  ctx.fillText('새로운 경험이', 0, -ch * .15); ctx.fillText('기다리고 있습니다.', 0, -ch * .03);
+  ctx.fillStyle = 'rgba(255,255,255,.82)'; ctx.font = `500 ${cw * .062}px "Noto Sans KR"`; ctx.fillText('metaBus에 참여하시겠습니까?', 0, ch * .12);
+  const bw = cw * .74 * (1 - .06 * press), bh = cw * .2 * (1 - .06 * press);
+  ctx.shadowColor = 'rgba(252,192,36,.8)'; ctx.shadowBlur = (20 + 40 * press) * K;
+  ctx.fillStyle = YELLOW; rr(-bw / 2, ch * .3 - bh / 2, bw, bh, bh / 2); ctx.fill(); ctx.shadowBlur = 0;
+  ctx.fillStyle = NAVY; ctx.font = `900 ${cw * .078}px "Noto Sans KR"`; ctx.fillText('▶  참여하기', 0, ch * .3 + cw * .004);
+  ctx.restore();
+}
+// S02_C02 참여 (서윤 → 준호 → ▶가 PLAY로) 7.5–9
+function s02b(lt) {
+  if (lt < .5) {
+    const tf = place(IMG.s02bA, { scale: 1.03 + .04 * lt, fx: .5 }); draw(IMG.s02bA, tf, 'saturate(.85)');
+    const [x, y] = pt(tf, .56, .62); const r = p(lt, .12, .5);
+    glow(x, y, 520 * K * eOut(r), '255,220,150', .7 * Math.sin(Math.PI * r));
+  } else {
+    const l2 = lt - .5; const tf = place(IMG.s02bB, { scale: 1.03 + .06 * l2, fx: .5 }); draw(IMG.s02bB, tf, 'saturate(.85)');
+    const [x, y] = pt(tf, .56, .64);
+    glow(x, y, (300 + 1400 * eOut(p(l2, .05, 1))) * K, '255,226,170', .55 + .4 * p(l2, .3, 1));
+    const m = eIO(p(l2, .38, .85));
+    if (m > 0) {
+      const Lw = layout('PLAY', lerp(WORD_W * .55, WORD_W * 2.1, eIO(p(l2, .6, 1.0))));
+      letters(Lw, W / 2, H / 2, (i, l) => { const k = eBack(clamp(m * 1.6 - i * .16)); return { a: clamp(k * 1.2), dx: lerp(-l.x, 0, k), fill: '#fff', shadowColor: 'rgba(255,170,60,.9)' }; });
+    }
+    fill('#FFF8EC', eIO(p(l2, .78, 1.0)));
+  }
+}
+// S03_C01 셔틀 등장 + PLAY(버스 뒤) 9–11
+function s03a(lt) {
+  const o = { scale: 1.02 + .1 * eIO(lt / 2), fx: .5, fy: .5 };
+  const tf = place(IMG.s03a, o); draw(IMG.s03a, tf);
+  // 버스 앞 전광판 행선지 "PLAY" (장면 속 글자)
+  const [lx, ly] = pt(place(IMG.s03a, o), LED_POS[0], LED_POS[1]);
+  // v4: 영상 속 버스는 움직여서 고정 좌표 LED가 어긋남 → 뺌
+  void lx; void ly;
+  glow(W / 2, H * .55, 900 * K, '255,214,150', .25);
+  fill('#FFF8EC', 1 - eOut(p(lt, 0, .35)));
+}
+// S03_C02 마스코트 환영 → 문 빛이 화면을 덮음 11–13
+function s03b(lt) {
+  const tf = place(IMG.s03b, { scale: 1.03 + .12 * eIO(lt / 2), fx: .5, fy: .55 }); draw(IMG.s03b, tf);
+  const [x, y] = pt(tf, .55, .5);
+  glow(x, y, (500 + 1500 * eIn(p(lt, .9, 2))) * K, '255,226,160', .3 + .7 * p(lt, .9, 2));
+  fill('#FFF6E4', eIn(p(lt, 1.6, 2)));
+}
+// S04_C01 준호의 산사 (빛이 걷힘) 13–15
+function s04a(lt) {
+  const tf = place(IMG.s04a, { scale: 1.02 + .06 * eIO(lt / 2), fx: .6, fy: .5 }); draw(IMG.s04a, tf);
+  fill('#FFF6E4', 1 - eOut(p(lt, 0, .7)));
+}
+// S04_C02 시선 틸트 (염주 손 → 하늘 → 슬로프 꼭대기 서윤) 15–17
+function s04b(lt) {
+  const TS = V ? 1.6 : 1;
+  if (lt < .6) {
+    const tf = place(IMG.pov, { scale: 1.03 + .06 * (lt / .6), fx: .5, dy: .04 * eIn(p(lt, .4, .6)) }); draw(IMG.pov, tf);
+  } else if (lt < 1.0) {
+    const k = eIn(p(lt, .6, 1.0)); const tf = place(IMG.tiltUp, { scale: TS, fy: lerp(1, 0, k) });
+    draw(IMG.tiltUp, tf, `blur(${(2 + 10 * k) * K}px)`);
+  } else {
+    // 16:9는 세로 이미지가 화면보다 훨씬 길어 얼굴 · 상체에서 멈춤, 9:16은 전신까지
+    const k = eOut(p(lt, 1.0, 1.45)); const tf = place(IMG.tiltDown, { scale: TS * (1 + .03 * p(lt, 1.45, 2)), fy: lerp(0, V ? .45 : .3, k) });
+    draw(IMG.tiltDown, tf, k < 1 ? `blur(${(12 * (1 - k)) * K}px)` : null);
+  }
+}
+// S05_C01 스키: 장갑 → 활강 + PLAY 뒤 → 급정지 눈보라 17–19
+function s05a(lt) {
+  if (lt < .5) { draw(IMG.gloves, place(IMG.gloves, { scale: 1.04 + .08 * (lt / .5), fx: .5 })); return; }
+  const l2 = lt - .5;
+  const Lw = layout('PLAY', WORD_W * 1.0);
+  const scatter = p(l2, .85, 1.45);
+  const each = (i) => {
+    const inK = eOut(p(l2, .0 + i * .07, .38 + i * .07));
+    const r = rng(31 + i); const dx = (r() - .2) * .5 * W, dy = -(r() * .45 + .15) * H, rot = (r() - .5) * .9;
+    const sk = eIO(clamp(scatter * 1.4 - (3 - i) * .12));
+    return { a: inK * (1 - sk), dx: (1 - inK) * W * .36 + sk * dx, dy: sk * dy, rot: sk * rot, blur: sk * 18 * K };
+  };
+  if (l2 < .95) {
+    const cam = eIO(p(l2, 0, .95)); const o = { scale: 1.08 + .05 * cam, fx: .5, dx: lerp(.015, -.015, cam) };
+    draw(IMG.ski, place(IMG.ski, o));
+    // 9:16은 인물이 화면을 거의 채워 뒤에 깔면 가려짐 → 아래쪽 눈 위, 인물 앞에 둔다
+    const lx = W / 2 + lerp(.03, -.03, cam) * W;
+    if (!V) letters(Lw, lx, H * .5, each);
+    draw(IMG.skiCut, place(IMG.skiCut, o));
+    if (V) letters(Lw, lx, H * .8, each);
+  } else {
+    draw(IMG.stop, place(IMG.stop, { scale: 1.06 + .05 * p(l2, .95, 1.5), fx: .42 }));
+    letters(Lw, W / 2 - .03 * W, H * (V ? .8 : .5), each);
+  }
+  snowBurst(p(l2, .8, 1.5));
+  fill('#FAFCFF', eIO(p(l2, 1.15, 1.5)));
+}
+// S05_C02 산사: 합장 → 절, 금빛 PLAY 뒤 19–20.5
+function s05b(lt) {
+  const bow = lt >= .75; const key = bow ? 'bow' : 'prayer';
+  const o = { scale: 1.03 + .05 * eIO(lt / 1.5), fx: .42, fy: .5 };   // v4: 한 영상 컷이라 프레이밍 통일
+  draw(IMG[key], place(IMG[key], o));
+  fill('#FAFCFF', 1 - eOut(p(lt, 0, .3)));
+  sparkles(p(lt, 1.0, 1.5), '255,220,150', .3);
+  fill('#05061A', eIn(p(lt, 1.25, 1.5)) * .85);
+}
+// S05_C03 달: 글자가 무중력으로 떠다님 20.5–22.5
+const FLOAT = V
+  ? [[.2, .16, -1], [.8, .3, 1], [.2, .8, 1], [.8, .88, -1]]
+  : [[.17, .28, -1], [.83, .22, 1], [.24, .78, 1], [.85, .74, -1]];
+function s05c(lt) {
+  const o = { scale: 1.04 + .05 * eIO(lt / 2), fx: .45, fy: .5 };
+  draw(IMG.moon, place(IMG.moon, o));
+  fill('#05061A', 1 - eOut(p(lt, 0, .4)));
+  // 별 하나가 커지며 헤드라이트로 (빛의 매치 컷)
+  const f = p(lt, 1.45, 2.0);
+  glow(W / 2, H * .5, (80 + 1600 * eIn(f)) * K, '220,230,255', f);
+  fill('#EEF3FF', eIn(p(lt, 1.8, 2.0)));
+}
+// S05_C04 레이싱: 헤드라이트 + 늘어난 PLAY → 차 통과 와이프 22.5–24
+function s05d(lt) {
+  if (lt < .7) {
+    const o = { scale: 1.02 + .14 * eIn(lt / .7), fx: .5, fy: .5 };
+    draw(IMG.head, place(IMG.head, o));
+    fill('#EEF3FF', 1 - eOut(p(lt, 0, .25)));
+  } else {
+    const l2 = lt - .7; const k = eOut(p(l2, 0, .22)); const whip = eIn(p(l2, .55, .8));
+    const tf = place(IMG.pass, { scale: 1.06, fx: .45, dx: (1 - k) * 1.0 - whip * .3, free: k < 1 || whip > 0 });
+    fill('#EEF3FF'); draw(IMG.pass, tf, `blur(${(1.5 + 16 * whip) * K}px)`);
+    fill('#1A1660', whip * .6);
+  }
+}
+// S05_C05 야구장: 카드 섹션 PLAY + 세 명 응원 24–26
+function s05e(lt) {
+  const fx = V ? lerp(.28, .72, eIO(lt / 2)) : .5;
+  const o = { scale: 1.12 + .04 * eIO(lt / 2), fx, fy: .3 };   // v4: 아래 광고판 깨진 글자를 화면 밖으로
+  draw(IMG.stadium, place(IMG.stadium, o));
+  mosaic(W / 2, H * .2, V ? W * .96 : W * .62, p(lt, .05, .8));
+  draw(IMG.stadiumCut, place(IMG.stadiumCut, o));
+  confetti(lt);
+  fill('#1A1660', 1 - eOut(p(lt, 0, .2)));
+}
+// S06 엔딩: PLAY → PLAY YOUR WORLD → metaBus 26–30
+function s06(lt) {
+  const bg = ctx.createLinearGradient(0, 0, 0, H); bg.addColorStop(0, NAVY); bg.addColorStop(1, '#241C8C');
+  ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H); stars(lt, .8);
+  const fade = 1 - eIO(p(lt, 0, .5));
+  if (fade > 0) draw(IMG.stadium, place(IMG.stadium, { scale: 1.08, fx: V ? .72 : .5 }), null, fade);
+  const out = eIO(p(lt, 1.6, 2.1));
+  const up = eIO(p(lt, .7, 1.2));
+  const Lw = layout('PLAY', (V ? W * .78 : W * .6));
+  const slam = eOut(p(lt, 0, .45));
+  letters(Lw, W / 2, H / 2 - up * Lw.size * .42, () => ({ a: slam * (1 - out), sx: lerp(1.35, 1, slam), sy: lerp(1.35, 1, slam), fill: YELLOW, shadowColor: 'rgba(0,0,40,.5)' }));
+  const Ly = layout('YOUR WORLD', Lw.total * 1.0, .03);
+  letters(Ly, W / 2, H / 2 + Lw.size * .48 - up * Lw.size * .42 + Ly.size * .05, (i) => { const k = eOut(p(lt, .85 + i * .045, 1.15 + i * .045)); return { a: k * (1 - out), dy: (1 - k) * Ly.size * .4, fill: '#fff', shadowColor: 'rgba(0,0,40,.5)' }; });
+  const lk = eOut(p(lt, 1.9, 2.4)); const lh = (V ? 96 : 118) * K * lerp(.94, 1, lk);
+  logo(W / 2, H / 2 - lh * .3, lh, lk);
+  const uk = eOut(p(lt, 2.35, 2.8));
+  ctx.save(); ctx.globalAlpha = uk; ctx.fillStyle = '#EEEBFF'; ctx.font = `700 ${(V ? 46 : 52) * K}px Inter, sans-serif`;
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; if ('letterSpacing' in ctx) ctx.letterSpacing = `${6 * K}px`;
+  ctx.fillText('metabus.app', W / 2, H / 2 + lh * 1.05 + (1 - uk) * 16 * K); ctx.restore();
+}
+
+// ---- v4: 장면별 영상 컷 바인딩 [IMG 키, 컷 id, 컷 시간(초), 누끼]
+const CLIP = {
+  1: '01_S01_C01_seoyun_room', 2: '02_S01_C02a_busstop_wide', 3: '03_S01_C02b_junho_phone', 4: '04_S02_C01_phone_screen',
+  5: '05_S02_C02A_seoyun_tap', 7: '07_S02_C02B_junho_tap_close', 8: '08_S03_C01a_bus_far', 9: '09_S03_C01b_bus_arrive',
+  10: '10_S03_C02_mascot_door', 11: '11_S04_C01_temple_yard', 12: '12_S04_C02_prayer_beads_pov', 13: '13_S05_C01a_ski_slope',
+  14: '14_S05_C01b_ski_stop_snow', 15: '15_S05_C02_prayer_buddha', 16: '16_S05_C03_moon', 17: '17_S05_C04a_racecar_charge',
+  18: '18_S05_C04b_racecar_passby', 19: '19_S05_C05_stadium',
+};
+const BIND = {
+  s01a: lt => [['s01a', CLIP[1], lt]],
+  s01b: lt => lt < 1.95 ? [['s01b', CLIP[2], lt + .45]] : [['s01b', CLIP[3], lt - 1.95]],
+  s02a: lt => [['s02a', CLIP[4], lt * .89]],
+  s02b: lt => lt < .5 ? [['s02bA', CLIP[5], lt * 1.7]] : [['s02bB', CLIP[7], (lt - .5) * 1.4]],
+  s03a: lt => lt < 1 ? [['s03a', CLIP[8], lt]] : [['s03a', CLIP[9], (lt - 1) * 1.2]],
+  s03b: lt => [['s03b', CLIP[10], lt * .73]],
+  s04a: lt => [['s04a', CLIP[11], lt * .96]],
+  s04b: lt => lt < 1 ? [['pov', CLIP[12], lt * 1.75], ['tiltUp', CLIP[12], lt * 1.75]] : [['tiltDown', CLIP[13], lt - 1]],
+  s05a: lt => lt < .5 ? [['gloves', CLIP[13], 1 + lt * .9]]
+    : (t => [['ski', CLIP[14], t], ['skiCut', CLIP[14], t, true], ['stop', CLIP[14], t]])((lt - .5) * 1.45),
+  s05b: lt => [['prayer', CLIP[15], lt * 1.5], ['bow', CLIP[15], lt * 1.5]],
+  s05c: lt => [['moon', CLIP[16], lt * .69]],
+  s05d: lt => lt < .7 ? [['head', CLIP[17], lt * 1.43]] : [['pass', CLIP[18], (lt - .7) * .73]],
+  s05e: lt => (t => [['stadium', CLIP[19], t], ['stadiumCut', CLIP[19], t, true]])(lt * 1.04),
+  s06: () => [['stadium', CLIP[19], 99]],
+};
+async function bindVideo(name, lt) {
+  const b = BIND[name]; if (!b) return;
+  await Promise.all(b(lt).map(async ([k, id, ct, cut]) => { const im = await Clip.frame(id, ct, { cut: !!cut }); if (im) IMG[k] = im; }));
+}
+const SHOTS = [
+  [0, 3, s01a], [3, 6, s01b], [6, 7.5, s02a], [7.5, 9, s02b], [9, 11, s03a], [11, 13, s03b],
+  [13, 15, s04a], [15, 17, s04b], [17, 19, s05a], [19, 20.5, s05b], [20.5, 22.5, s05c], [22.5, 24, s05d],
+  [24, 26, s05e], [26, 30.01, s06],
+];
+window.renderAt = async (t) => {
+  ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1; ctx.filter = 'none'; ctx.shadowBlur = 0; ctx.shadowOffsetY = 0;
+  ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, H);
+  const s = SHOTS.find(([a, b]) => t >= a && t < b) || SHOTS[SHOTS.length - 1];
+  await bindVideo(s[2].name, t - s[0]);
+  s[2](t - s[0]);
+  badge(p(t, .6, 1.0) * (1 - p(t, 25.8, 26.1)));
+};
+
+(async () => {
+  try {
+    const A = 'assets/';
+    await Promise.all([
+      load('s01a', A + 'S01_C01.png'), load('s01b', A + 'S01_C02.png'), load('s02a', A + 'S02_C01.png'),
+      load('s02bA', A + 'S02_C02_A.png'), load('s02bB', A + 'S02_C02_B.png'),
+      load('s03a', A + 'S03_C01.png'), load('s03aCut', A + 'S03_C01_cut.png'), load('s03b', A + 'S03_C02.png'),
+      load('s04a', A + 'S04_C01.png'), load('pov', A + 'S04_C02_junho_pov.png'),
+      load('tiltUp', A + 'S04_C02_tilt_up.png'), load('tiltDown', A + 'S04_C02_tilt_down.png'),
+      load('gloves', A + 'S05_C01_gloves.png'), load('ski', A + 'S05_C01_ski_run.png'), load('skiCut', A + 'S05_C01_ski_run_cut.png'), load('stop', A + 'S05_C01_stop.png'),
+      load('prayer', A + 'S05_C02_prayer.png'), load('prayerCut', A + 'S05_C02_prayer_cut.png'),
+      load('bow', A + 'S05_C02_bow.png'), load('bowCut', A + 'S05_C02_bow_cut.png'),
+      load('moon', A + 'S05_C03_moon.png'), load('moonCut', A + 'S05_C03_moon_cut.png'),
+      load('head', A + 'S05_C04_headlight.png'), load('headCut', A + 'S05_C04_headlight_cut.png'), load('pass', A + 'S05_C04_passby.png'),
+      load('stadium', A + 'S05_C05_stadium.png'), load('stadiumCut', A + 'S05_C05_stadium_cut.png'),
+    ]);
+    await Promise.all([document.fonts.load(FP(200)), document.fonts.load('900 40px "Noto Sans KR"'), document.fonts.load('700 40px "Noto Sans KR"'),
+      document.fonts.load('500 40px "Noto Sans KR"'), document.fonts.load('800 40px Nunito'), document.fonts.load('700 40px Inter')]);
+    await document.fonts.ready;
+    await Clip.init('assets/clips/', 'clips/clips.json');
+    buildMosaic(); buildLed();
+    window.ASSETS = { aspect: V ? '9x16' : '16x9', images: Object.keys(IMG).length, play: document.fonts.check(FP(100)), kr: document.fonts.check('700 40px "Noto Sans KR"') };
+    await window.renderAt(0);
+    window.READY = true;
+  } catch (e) { window.ERR = String(e); }
+})();
+</script>
+</body>
+</html>
