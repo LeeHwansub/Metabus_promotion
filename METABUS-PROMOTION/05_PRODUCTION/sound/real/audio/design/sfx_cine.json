@@ -1,0 +1,142 @@
+{
+ "_doc": "시네마틱 효과음 5곳 + 관중. 시네마틱엔 PLAY 폭발 · 슬램이 없어 엔딩은 부드러운 히트.",
+ "samples": {
+  "noti": {
+   "file": "audio/assets/ui/mk-2356_dry-pop-up-notification.wav",
+   "mono": true,
+   "norm_peak_db": -3,
+   "eq": {
+    "hp": 300
+   }
+  },
+  "zoom_hit": {
+   "file": "audio/assets/impacts/mk-772_quick-zoom-impact.wav",
+   "norm_peak_db": -3,
+   "fade_out": 0.15
+  },
+  "riser": {
+   "file": "audio/assets/motion/mk-790_cinematic-trailer-riser.wav",
+   "norm_peak_db": -3,
+   "eq": {
+    "hp": 120
+   }
+  },
+  "snow_whoosh": {
+   "file": "audio/assets/motion/mk-1490_fast-whoosh-transition.wav",
+   "norm_peak_db": -3,
+   "eq": {
+    "hp": 150
+   }
+  },
+  "car_pass": {
+   "file": "audio/assets/foley/mk-1538_fast-car-drive-by.wav",
+   "norm_peak_db": -3,
+   "eq": {
+    "hp": 60
+   }
+  },
+  "epic_hit": {
+   "file": "audio/assets/impacts/mk-2908_movie-trailer-epic-impact.wav",
+   "end": 2.9,
+   "norm_peak_db": -3,
+   "fade_out": 0.8
+  }
+ },
+ "pools": {
+  "noti": [
+   "noti"
+  ],
+  "zoom_hit": [
+   "zoom_hit"
+  ],
+  "riser": [
+   "riser"
+  ],
+  "snow": [
+   "snow_whoosh"
+  ],
+  "car": [
+   "car_pass"
+  ],
+  "slam": [
+   "epic_hit"
+  ],
+  "logo_hit": [
+   "epic_hit"
+  ]
+ },
+ "rules": [
+  {
+   "name": "phone notify",
+   "match": {
+    "id": "s02:phone:notify"
+   },
+   "pool": "noti",
+   "mode": "fixed",
+   "gain_db": -12,
+   "pan": 0,
+   "align": "attack",
+   "offset": -0.06,
+   "qa_ok": "의도: 알림 팝은 시작 후 약 0.1초에 최대음 → 시작을 60ms 앞당겨 최대음이 화면 +40ms(±45 안)"
+  },
+  {
+   "name": "door light",
+   "match": {
+    "id": "s03:door:light"
+   },
+   "pool": "riser",
+   "mode": "fixed",
+   "gain_db": -7,
+   "pan": 0,
+   "align": "end"
+  },
+  {
+   "name": "ski snow",
+   "match": {
+    "id": "s05:ski:snow"
+   },
+   "pool": "snow",
+   "mode": "fixed",
+   "gain_db": -8,
+   "pan": 0.2,
+   "align": "peak"
+  },
+  {
+   "name": "race pass",
+   "match": {
+    "id": "s05:race:passby"
+   },
+   "pool": "car",
+   "mode": "fixed",
+   "gain_db": -6,
+   "pan": "cue",
+   "align": "peak"
+  },
+  {
+   "name": "logo in",
+   "match": {
+    "id": "s06:logo:in"
+   },
+   "pool": "logo_hit",
+   "mode": "fixed",
+   "gain_db": -11,
+   "pan": 0,
+   "align": "attack",
+   "offset": -0.08,
+   "qa_ok": "의도: 히트는 화면 전환 80ms 전에 시작"
+  }
+ ],
+ "ambience": [
+  {
+   "name": "stadium crowd",
+   "file": "audio/assets/ambience/mk-462_huge-crowd-cheering-victory.wav",
+   "src_start": 0.5,
+   "at": 24.9,
+   "until": 27.15,
+   "fade_in": 0.25,
+   "fade_out": 0.5,
+   "gain_db": -12,
+   "width": 0.7
+  }
+ ]
+}

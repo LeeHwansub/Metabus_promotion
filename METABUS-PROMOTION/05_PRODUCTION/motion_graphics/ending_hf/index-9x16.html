@@ -98,6 +98,8 @@
 (() => {
   const root = document.getElementById('root');
   const V = root.classList.contains('is-v');
+  const CINE = root.classList.contains('is-cine');   // 시네마틱: PLAY 없이 로고만 3초 (V02 원칙: 엔딩 = 로고 + metabus.app)
+  const DUR = +root.dataset.duration;
   const W = +root.dataset.width, H = +root.dataset.height;
   const q = s => root.querySelector(s);
   const tl = gsap.timeline({ paused: true });
@@ -133,46 +135,63 @@
   gsap.set('#fadeout', { opacity: 0 });
   gsap.set('#glint', { attr: { x: -30 } });
 
+  if (!CINE) {
   // ---- 0.00 PLAY 슬램 + 빛 번쩍 + 카메라 흔들림
-  tl.fromTo('#flash', { opacity: .95 }, { opacity: 0, duration: .28, ease: 'power2.out' }, 0);
-  tl.to('#play .L', { opacity: 1, scale: 1, yPercent: 0, duration: .32, ease: 'expo.out', stagger: .035 }, 0);
-  tl.to('#bg', { scale: 1.26, duration: 4, ease: 'none' }, 0);
-  tl.to('#tint', { opacity: .9, duration: 1.2, ease: 'power2.inOut' }, .1);
-  tl.to('#cam', { keyframes: [{ x: 14, y: -8, duration: .04 }, { x: -11, y: 7, duration: .05 }, { x: 7, y: -4, duration: .06 }, { x: -4, y: 2, duration: .07 }, { x: 0, y: 0, duration: .1 }], ease: 'none' }, .02);
-  tl.fromTo('#ring', { scale: .15, opacity: .95 }, { scale: 2.7, opacity: 0, duration: .75, ease: 'power3.out' }, .14);
-  tl.to('#streak1', { xPercent: 25, opacity: .9, duration: .35, ease: 'power2.out' }, 0).to('#streak1', { opacity: 0, duration: .35 }, .35);
-  tl.to('#streak2', { xPercent: -20, opacity: .7, duration: .4, ease: 'power2.out' }, .04).to('#streak2', { opacity: 0, duration: .35 }, .4);
-  tl.to('#glow', { opacity: .55, scale: 1, duration: .9, ease: 'power2.out' }, .1);
+    tl.fromTo('#flash', { opacity: .95 }, { opacity: 0, duration: .28, ease: 'power2.out' }, 0);
+    tl.to('#play .L', { opacity: 1, scale: 1, yPercent: 0, duration: .32, ease: 'expo.out', stagger: .035 }, 0);
+    tl.to('#bg', { scale: 1.26, duration: 4, ease: 'none' }, 0);
+    tl.to('#tint', { opacity: .9, duration: 1.2, ease: 'power2.inOut' }, .1);
+    tl.to('#cam', { keyframes: [{ x: 14, y: -8, duration: .04 }, { x: -11, y: 7, duration: .05 }, { x: 7, y: -4, duration: .06 }, { x: -4, y: 2, duration: .07 }, { x: 0, y: 0, duration: .1 }], ease: 'none' }, .02);
+    tl.fromTo('#ring', { scale: .15, opacity: .95 }, { scale: 2.7, opacity: 0, duration: .75, ease: 'power3.out' }, .14);
+    tl.to('#streak1', { xPercent: 25, opacity: .9, duration: .35, ease: 'power2.out' }, 0).to('#streak1', { opacity: 0, duration: .35 }, .35);
+    tl.to('#streak2', { xPercent: -20, opacity: .7, duration: .4, ease: 'power2.out' }, .04).to('#streak2', { opacity: 0, duration: .35 }, .4);
+    tl.to('#glow', { opacity: .55, scale: 1, duration: .9, ease: 'power2.out' }, .1);
 
-  // ---- 0.55 PLAY 위로 · YOUR WORLD 마스크에서 올라옴
-  tl.to('#play', { scale: .64, yPercent: V ? -34 : -30, duration: .55, ease: 'expo.inOut' }, .55);
-  tl.to('#your', { y: V ? -64 : -54, duration: .55, ease: 'expo.inOut' }, .55);
-  tl.to('#your .W', { yPercent: 0, duration: .5, ease: 'expo.out', stagger: .07 }, .72);
+    // ---- 0.55 PLAY 위로 · YOUR WORLD 마스크에서 올라옴
+    tl.to('#play', { scale: .64, yPercent: V ? -34 : -30, duration: .55, ease: 'expo.inOut' }, .55);
+    tl.to('#your', { y: V ? -64 : -54, duration: .55, ease: 'expo.inOut' }, .55);
+    tl.to('#your .W', { yPercent: 0, duration: .5, ease: 'expo.out', stagger: .07 }, .72);
 
-  // ---- 1.40 PLAY가 한 점으로 접히며 티켓 마크로 (3D 플립)
-  tl.to('#your', { opacity: 0, y: '+=30', duration: .32, ease: 'power2.in' }, 1.36);
-  tl.to('#play .L', { scaleX: 0, opacity: 0, duration: .3, ease: 'power3.in', stagger: { each: .025, from: 'edges' } }, 1.38);
-  tl.to('#play', { yPercent: 0, duration: .3, ease: 'power3.in' }, 1.38);
-  tl.to('#mark', { rotationY: 0, scale: 1, opacity: 1, duration: .55, ease: 'back.out(1.7)' }, 1.52);
-  tl.to('#glow', { opacity: .8, scale: .8, duration: .4, ease: 'power2.out' }, 1.52);
+    // ---- 1.40 PLAY가 한 점으로 접히며 티켓 마크로 (3D 플립)
+    tl.to('#your', { opacity: 0, y: '+=30', duration: .32, ease: 'power2.in' }, 1.36);
+    tl.to('#play .L', { scaleX: 0, opacity: 0, duration: .3, ease: 'power3.in', stagger: { each: .025, from: 'edges' } }, 1.38);
+    tl.to('#play', { yPercent: 0, duration: .3, ease: 'power3.in' }, 1.38);
+    tl.to('#mark', { rotationY: 0, scale: 1, opacity: 1, duration: .55, ease: 'back.out(1.7)' }, 1.52);
+    tl.to('#glow', { opacity: .8, scale: .8, duration: .4, ease: 'power2.out' }, 1.52);
 
-  // ---- 1.85 글린트 + 마크가 왼쪽으로, 워드마크 와이프
-  tl.to('#glint', { attr: { x: 92 }, duration: .55, ease: 'power2.inOut' }, 1.82);
-  tl.to('.markwrap', { x: 0, duration: .55, ease: 'expo.inOut' }, 1.88);
-  tl.to('#word', { clipPath: 'inset(0% 0% 0% 0%)', x: 0, duration: .6, ease: 'expo.out' }, 2.02);
-  tl.to('#glow', { opacity: .45, scale: 1.25, duration: 1.2, ease: 'power1.out' }, 2.0);
+    // ---- 1.85 글린트 + 마크가 왼쪽으로, 워드마크 와이프
+    tl.to('#glint', { attr: { x: 92 }, duration: .55, ease: 'power2.inOut' }, 1.82);
+    tl.to('.markwrap', { x: 0, duration: .55, ease: 'expo.inOut' }, 1.88);
+    tl.to('#word', { clipPath: 'inset(0% 0% 0% 0%)', x: 0, duration: .6, ease: 'expo.out' }, 2.02);
+    tl.to('#glow', { opacity: .45, scale: 1.25, duration: 1.2, ease: 'power1.out' }, 2.0);
 
-  // ---- 2.35 URL · 홀드(느린 푸시인) · 끝 0.4초 페이드
-  tl.to('#url', { opacity: 1, y: 0, letterSpacing: '.22em', duration: .6, ease: 'expo.out' }, 2.38);
-  tl.to('#cam', { scale: 1.035, duration: 1.6, ease: 'none' }, 2.4);
-  tl.to('#fadeout', { opacity: 1, duration: .4, ease: 'power1.in' }, 3.6);
-  tl.set({}, {}, 4);
+    // ---- 2.35 URL · 홀드(느린 푸시인) · 끝 0.4초 페이드
+    tl.to('#url', { opacity: 1, y: 0, letterSpacing: '.22em', duration: .6, ease: 'expo.out' }, 2.38);
+    tl.to('#cam', { scale: 1.035, duration: 1.6, ease: 'none' }, 2.4);
+    tl.to('#fadeout', { opacity: 1, duration: .4, ease: 'power1.in' }, 3.6);
+  } else {
+  // ---- 시네마틱 3초: 야구장 크레인업에서 부드럽게 → 티켓 플립 → 글린트 · 워드마크 → URL → 홀드
+    gsap.set(['#play', '#your', '#ring', '#streak1', '#streak2'], { opacity: 0 });
+    tl.fromTo('#flash', { opacity: .55 }, { opacity: 0, duration: .45, ease: 'power2.out' }, 0);
+    tl.to('#bg', { scale: 1.26, duration: 3, ease: 'none' }, 0);
+    tl.to('#tint', { opacity: .9, duration: 1.0, ease: 'power2.inOut' }, 0);
+    tl.to('#mark', { rotationY: 0, scale: 1, opacity: 1, duration: .6, ease: 'back.out(1.6)' }, .15);
+    tl.to('#glow', { opacity: .8, scale: .8, duration: .5, ease: 'power2.out' }, .15);
+    tl.to('#glint', { attr: { x: 92 }, duration: .55, ease: 'power2.inOut' }, .45);
+    tl.to('.markwrap', { x: 0, duration: .55, ease: 'expo.inOut' }, .5);
+    tl.to('#word', { clipPath: 'inset(0% 0% 0% 0%)', x: 0, duration: .6, ease: 'expo.out' }, .62);
+    tl.to('#glow', { opacity: .45, scale: 1.25, duration: 1.2, ease: 'power1.out' }, .65);
+    tl.to('#url', { opacity: 1, y: 0, letterSpacing: '.22em', duration: .6, ease: 'expo.out' }, .98);
+    tl.to('#cam', { scale: 1.035, duration: 2.0, ease: 'none' }, 1.0);
+    tl.to('#fadeout', { opacity: 1, duration: .35, ease: 'power1.in' }, 2.65);
+  }
+  tl.set({}, {}, DUR);
 
   window.__timelines = window.__timelines || {};
   window.__timelines['ending'] = tl;
 
   // ---- 우리 렌더러(render.mjs) 호환: renderAt(t) = 타임라인 탐색
-  window.renderAt = async (t) => { tl.seek(Math.min(t, 3.999), false); drawFx(); };
+  window.renderAt = async (t) => { tl.seek(Math.min(t, DUR - 0.001), false); drawFx(); };
   document.fonts.ready.then(() => { tl.seek(0, false); drawFx(); window.ASSETS = { aspect: V ? '9x16' : '16x9', fonts: document.fonts.check('400 80px "Archivo Black"') && document.fonts.check('900 80px Nunito') }; window.READY = true; });
 })();
 </script>

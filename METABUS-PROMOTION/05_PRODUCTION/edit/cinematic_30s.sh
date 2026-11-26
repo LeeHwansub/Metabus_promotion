@@ -1,14 +1,15 @@
 #!/usr/bin/env bash
-# metaBus 시네마틱 30초 16:9 — Higgsfield 생성 컷 19개(27초) + 엔딩 3초 + 임시 사운드
+# metaBus 시네마틱 30초 16:9 — Higgsfield 생성 컷 19개(27초) + 엔딩 3초 + 사운드트랙
+# 버전: v1 임시 합성음(v0.6 타이밍) · v2 컷에 맞춘 합성음 · v3 실제 녹음 사운드트랙 + HyperFrames 형식 엔딩
 # 사용: bash cinematic_30s.sh [METABUS-PROMOTION 경로]   (영상·사운드는 gitignore 대상이라 원본 체크아웃 경로를 넘김)
 set -euo pipefail
 ROOT="${1:-$(cd "$(dirname "$0")/../.." && pwd)}"
 CUTS="$ROOT/05_PRODUCTION/higgsfield_gen/cuts_v1"
-ENDING="$ROOT/05_PRODUCTION/motion_graphics/ending_three/ending_three_16x9.mp4"
-# v2: 컷에 맞춘 사운드(sound/build_sync_audio.py cinematic → loudness.py -14 LUFS). v1은 v0.6 타이밍의 임시 믹스였음
-SOUND="$ROOT/05_PRODUCTION/sound/sync_cinematic_30s_-14LUFS.wav"
+# v3: HyperFrames 형식 엔딩(ending_hf/index-cine.html, 로고만 3초)을 렌더한 영상. v2는 ending_three(예전 흰 버스 · 참여하기 카드)
+ENDING="$ROOT/05_PRODUCTION/motion_graphics/ending_hf/ending_cine_16x9.mp4"
+SOUND="$ROOT/05_PRODUCTION/sound/real/out/audio/soundtrack_cine.wav"   # v3: 실제 녹음 사운드트랙(real-sound, audio/sounddesign_cine.json)
 OUT_DIR="$ROOT/06_FINAL/cinematic"
-OUT="$OUT_DIR/metaBus_cinematic_30s_16x9_v2.mp4"
+OUT="$OUT_DIR/metaBus_cinematic_30s_16x9_v3.mp4"
 mkdir -p "$OUT_DIR"
 
 # 컷 · 시작 프레임 · 사용 프레임 (24fps). V02 타이밍(S01 0–6 · S02 6–9 · S03 9–13 · S04 13–17 · S05 17–27)에 맞춰 줄임
@@ -45,9 +46,9 @@ for row in "${SPEC[@]}"; do
   FILT+="[$i:v]trim=start_frame=${start}:end_frame=$((start+n)),setpts=PTS-STARTPTS,${extra}scale=1920:1080:flags=lanczos,unsharp=5:5:0.4,setsar=1,fps=24,format=yuv420p[v$i];"
   LABELS+="[v$i]"; i=$((i+1)); total=$((total+n))
 done
-# 엔딩: 참여하기 카드(0–2초)는 V02 원칙(엔딩 카드에 버튼 없음)에 맞춰 빼고 도시 · 버스 → 로고 3초만
+# 엔딩: 로고 3초 (ending_hf 시네마틱 모드)
 INPUTS+=(-i "$ENDING")
-FILT+="[$i:v]trim=start_frame=48:end_frame=120,setpts=PTS-STARTPTS,scale=1920:1080,setsar=1,fps=24,format=yuv420p[v$i];"
+FILT+="[$i:v]trim=start_frame=0:end_frame=72,setpts=PTS-STARTPTS,scale=1920:1080,setsar=1,fps=24,format=yuv420p[v$i];"
 LABELS+="[v$i]"; total=$((total+72)); i=$((i+1))
 FILT+="${LABELS}concat=n=$i:v=1:a=0[vout];"
 FILT+="[$i:a]atrim=0:30,afade=t=out:st=29.3:d=0.7,aresample=48000[aout]"
