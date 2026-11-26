@@ -132,7 +132,7 @@
    "file": "audio/assets/ambience/mk-462_huge-crowd-cheering-victory.wav",
    "src_start": 0.5,
    "at": 20.0,
-   "until": 21.85,
+   "until": 22.275,
    "fade_in": 0.25,
    "fade_out": 0.5,
    "gain_db": -12,

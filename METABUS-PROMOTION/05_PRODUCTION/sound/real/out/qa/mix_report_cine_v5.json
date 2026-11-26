@@ -49,7 +49,7 @@
    "align": "peak"
   },
   {
-   "t": 21.6283,
+   "t": 22.045,
    "event": "s06:logo:in",
    "kind": "hit",
    "rule": "logo in",
@@ -65,15 +65,15 @@
  "buses": {
   "sfx": {
    "peak_dbfs": -8.53,
-   "rms_dbfs": -34.06
+   "rms_dbfs": -34.13
   },
   "amb": {
    "peak_dbfs": -13.42,
-   "rms_dbfs": -35.9
+   "rms_dbfs": -34.79
   },
   "music": {
    "peak_dbfs": 8.43,
-   "rms_dbfs": -17.94
+   "rms_dbfs": -17.95
   }
  },
  "ambience": [
@@ -81,9 +81,9 @@
    "name": "stadium crowd",
    "file": "audio/assets/ambience/mk-462_huge-crowd-cheering-victory.wav",
    "at": 20.0,
-   "until": 21.85,
+   "until": 22.275,
    "looped": false,
-   "body_rms_dbfs": -23.1
+   "body_rms_dbfs": -23.2
   }
  ],
  "music_segments": [

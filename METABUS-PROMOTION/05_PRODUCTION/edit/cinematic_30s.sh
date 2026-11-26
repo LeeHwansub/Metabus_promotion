@@ -36,7 +36,7 @@ SPEC=(
   "16_S05_C03_moon 0 24 1.375 0.08 out"
   "17_S05_C04a_racecar_charge 0 15 1.6 0.28 in"
   "18_S05_C04b_racecar_passby 0 10 1.4 0.06 both"
-  "19_S05_C05_stadium 0 40 1.25 0.10 in"
+  "19_S05_C05_stadium 0 50 1.00 0.08 in"   # v5: 응원은 이전처럼 원래 속도 · 2.08초
 )
 
 INPUTS=(); FILT=""; LABELS=""; i=0; total=0
