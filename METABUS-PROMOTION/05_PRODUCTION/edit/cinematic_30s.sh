@@ -2,15 +2,17 @@
 # metaBus 시네마틱 30초 16:9 — Higgsfield 생성 컷 19개(27초) + 엔딩 3초 + 사운드트랙
 # 버전: v1 임시 합성음(v0.6 타이밍) · v2 컷에 맞춘 합성음 · v3 실제 녹음 사운드트랙 + HyperFrames 형식 엔딩
 #       v4 버스 · 체험 구간 속도감(빨리 감기 · 푸시인 줌 · 휩 블러). 컷 길이와 시작 시각은 그대로라 사운드트랙 싱크 유지
+#       v5 07컷(준호 터치 클로즈업) 삭제 · 30초 제한 해제 → 버스 · 체험 컷을 짧게 잘라 1.25~1.6배 빠르게(약 24.7초).
+#          컷 시각이 바뀌어 사운드트랙도 새로 만듦(sound/real/audio/sounddesign_cine_v5.json, 드롭 = 14.083초 스키 컷)
 # 사용: bash cinematic_30s.sh [METABUS-PROMOTION 경로]   (영상·사운드는 gitignore 대상이라 원본 체크아웃 경로를 넘김)
 set -euo pipefail
 ROOT="${1:-$(cd "$(dirname "$0")/../.." && pwd)}"
 CUTS="$ROOT/05_PRODUCTION/higgsfield_gen/cuts_v1"
 # v3: HyperFrames 형식 엔딩(ending_hf/index-cine.html, 로고만 3초)을 렌더한 영상. v2는 ending_three(예전 흰 버스 · 참여하기 카드)
 ENDING="$ROOT/05_PRODUCTION/motion_graphics/ending_hf/ending_cine_16x9.mp4"
-SOUND="$ROOT/05_PRODUCTION/sound/real/out/audio/soundtrack_cine.wav"   # v3: 실제 녹음 사운드트랙(real-sound, audio/sounddesign_cine.json)
+SOUND="$ROOT/05_PRODUCTION/sound/real/out/audio/soundtrack_cine_v5.wav"   # 실제 녹음 사운드트랙(real-sound, v5: audio/sounddesign_cine_v5.json)
 OUT_DIR="$ROOT/06_FINAL/cinematic"
-OUT="$OUT_DIR/metaBus_cinematic_30s_16x9_v4.mp4"
+OUT="$OUT_DIR/metaBus_cinematic_16x9_v5.mp4"
 mkdir -p "$OUT_DIR"
 
 # 컷 · 시작 프레임 · 사용 프레임 (24fps). V02 타이밍(S01 0–6 · S02 6–9 · S03 9–13 · S04 13–17 · S05 17–27)에 맞춰 줄임
@@ -23,19 +25,18 @@ SPEC=(
   "04_S02_C01_phone_screen 0 29"
   "05_S02_C02A_seoyun_tap 0 21"
   "06_S02_C02B_junho_phone 0 16"
-  "07_S02_C02B_junho_tap_close 6 29"
-  "08_S03_C01a_bus_far 0 22 1.10 0.18 out"
-  "09_S03_C01b_bus_arrive 0 29 1.00 0.10 in"
-  "10_S03_C02_mascot_door 0 35 1.00 0.08 -"
-  "11_S04_C01_temple_yard 0 41 1.00 0.04 -"
-  "12_S04_C02_prayer_beads_pov 0 43 1.00 0 -"
-  "13_S05_C01a_ski_slope 0 29 1.20 0.12 in"
-  "14_S05_C01b_ski_stop_snow 0 52 1.00 0.10 out"
-  "15_S05_C02_prayer_buddha 0 43 1.25 0.08 in"
-  "16_S05_C03_moon 0 33 1.00 0.06 out"
-  "17_S05_C04a_racecar_charge 0 22 1.09 0.22 in"
-  "18_S05_C04b_racecar_passby 0 14 1.00 0.05 both"
-  "19_S05_C05_stadium 0 50 1.00 0.08 in"
+  "08_S03_C01a_bus_far 0 16 1.5625 0.22 out"
+  "09_S03_C01b_bus_arrive 0 20 1.45 0.12 in"
+  "10_S03_C02_mascot_door 0 26 1.346 0.10 -"
+  "11_S04_C01_temple_yard 0 36 1.2777 0.04 -"
+  "12_S04_C02_prayer_beads_pov 0 34 1.2647 0 -"
+  "13_S05_C01a_ski_slope 0 22 1.5909 0.16 in"
+  "14_S05_C01b_ski_stop_snow 0 38 1.368 0.12 out"
+  "15_S05_C02_prayer_buddha 0 34 1.6176 0.10 in"
+  "16_S05_C03_moon 0 24 1.375 0.08 out"
+  "17_S05_C04a_racecar_charge 0 15 1.6 0.28 in"
+  "18_S05_C04b_racecar_passby 0 10 1.4 0.06 both"
+  "19_S05_C05_stadium 0 40 1.25 0.10 in"
 )
 
 INPUTS=(); FILT=""; LABELS=""; i=0; total=0
@@ -57,7 +58,7 @@ for row in "${SPEC[@]}"; do
     out)  move+=",avgblur=sizeX=60:sizeY=1:enable='gte(t,${dur}-0.083)'" ;;
     both) move+=",avgblur=sizeX=60:sizeY=1:enable='lt(t,0.083)+gte(t,${dur}-0.083)'" ;;
   esac
-  FILT+="[$i:v]trim=start_frame=${start}:end_frame=$((start+src)),setpts=(PTS-STARTPTS)/${speed},fps=24,trim=end_frame=${n},setpts=PTS-STARTPTS,${extra}scale=1920:1080:flags=lanczos${move},unsharp=5:5:0.4,setsar=1,format=yuv420p[v$i];"
+  FILT+="[$i:v]trim=start_frame=${start}:end_frame=$((start+src)),setpts=(PTS-STARTPTS)/${speed},fps=24,tpad=stop_mode=clone:stop=3,trim=end_frame=${n},setpts=PTS-STARTPTS,${extra}scale=1920:1080:flags=lanczos${move},unsharp=5:5:0.4,setsar=1,format=yuv420p[v$i];"
   LABELS+="[v$i]"; i=$((i+1)); total=$((total+n))
 done
 # 엔딩: 로고 3초 (ending_hf 시네마틱 모드)
@@ -65,11 +66,12 @@ INPUTS+=(-i "$ENDING")
 FILT+="[$i:v]trim=start_frame=0:end_frame=72,setpts=PTS-STARTPTS,scale=1920:1080,setsar=1,fps=24,format=yuv420p[v$i];"
 LABELS+="[v$i]"; total=$((total+72)); i=$((i+1))
 FILT+="${LABELS}concat=n=$i:v=1:a=0[vout];"
-FILT+="[$i:a]atrim=0:30,afade=t=out:st=29.3:d=0.7,aresample=48000[aout]"
+DUR=$(python3 -c "print($total/24)"); FADE=$(python3 -c "print($total/24-0.7)")   # v5: 길이가 30초 고정이 아님
+FILT+="[$i:a]atrim=0:${DUR},afade=t=out:st=${FADE}:d=0.7,aresample=48000[aout]"
 INPUTS+=(-i "$SOUND")
 
 echo "컷 $((i-1))개 + 엔딩, 총 ${total}프레임 ($(echo "scale=3; $total/24" | bc)초)"
 ffmpeg -v error -y "${INPUTS[@]}" -filter_complex "$FILT" -map "[vout]" -map "[aout]" \
   -c:v libx264 -preset slow -crf 17 -pix_fmt yuv420p -r 24 -movflags +faststart \
-  -c:a aac -b:a 192k -shortest "$OUT"
+  -c:a aac -b:a 192k "$OUT"   # -shortest 빼기: 오디오(atrim)가 이미 영상 길이라, 있으면 반올림으로 마지막 영상 프레임이 잘림
 echo "→ $OUT"

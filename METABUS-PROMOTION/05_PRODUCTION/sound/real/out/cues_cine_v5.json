@@ -1,0 +1,41 @@
+{
+ "_doc": "시네마틱 v5 (07컷 삭제 · 버스/체험 빨리 감기, 총 593f = 24.708초) · 24fps",
+ "fps": 24,
+ "bpm": 120,
+ "total": 593,
+ "events": [
+  {
+   "f": 140.0,
+   "kind": "pop",
+   "weight": 0.7,
+   "id": "s02:phone:notify"
+  },
+  {
+   "f": 268.0,
+   "kind": "riser",
+   "weight": 1.0,
+   "dur": 26,
+   "id": "s03:door:light"
+  },
+  {
+   "f": 393.0,
+   "kind": "whoosh",
+   "weight": 1.0,
+   "dur": 10,
+   "id": "s05:ski:snow"
+  },
+  {
+   "f": 474.0,
+   "kind": "pass",
+   "weight": 1.0,
+   "id": "s05:race:passby",
+   "pan": 0.4
+  },
+  {
+   "f": 521.0,
+   "kind": "hit",
+   "weight": 1.0,
+   "id": "s06:logo:in"
+  }
+ ]
+}

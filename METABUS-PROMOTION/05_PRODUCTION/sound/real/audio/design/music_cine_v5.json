@@ -1,0 +1,45 @@
+{
+ "_doc": "시네마틱 v5: 드롭을 14.083초 스키 컷에. 인트로 4마디 → 그루브·브레이크다운 4마디(버스·산사) → 드롭 3마디(체험) → 아웃트로(야구장·로고)",
+ "music": {
+  "file": "audio/assets/music/mixkit-1012_take-this-higher.mp3",
+  "src_bpm": 123.991,
+  "target_bpm": 120.0,
+  "stretch": "rubberband",
+  "gain_db": 0.0,
+  "segments": [
+   {
+    "label": "src 0-3 인트로 → 현실·초대",
+    "src_from": 1.9299,
+    "src_to": 9.6724,
+    "at": -1.9167,
+    "fade_in": 0.008,
+    "fade_out": 0.06
+   },
+   {
+    "label": "src 22-25 그루브→브레이크다운 → 버스·산사",
+    "src_from": 44.5137,
+    "src_to": 52.2562,
+    "at": 6.0833,
+    "fade_in": 0.008,
+    "fade_out": 0.06
+   },
+   {
+    "label": "src 26-28 드롭 → 14.083초 스키부터 체험",
+    "src_from": 52.2562,
+    "src_to": 58.0631,
+    "at": 14.0833,
+    "fade_in": 0.008,
+    "fade_out": 0.06
+   },
+   {
+    "label": "src 44-46 아웃트로 → 야구장·로고, 감쇠",
+    "src_from": 87.0975,
+    "src_to": 92.9044,
+    "at": 20.0833,
+    "fade_in": 0.008,
+    "fade_out": 0.06,
+    "tail_fade": 1.8
+   }
+  ]
+ }
+}
