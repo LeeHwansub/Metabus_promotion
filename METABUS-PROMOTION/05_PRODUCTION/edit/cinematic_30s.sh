@@ -22,7 +22,7 @@ SPEC=(
   "01_S01_C01_seoyun_room 0 67"
   "02_S01_C02a_busstop_wide 11 48"
   "03_S01_C02b_junho_phone 0 25"
-  "04_S02_C01_phone_screen 0 29"
+  "04_S02_C01_phone_screen_invite 0 29"   # 초대 카드를 입힌 컷 (edit/invite_overlay.sh)
   "05_S02_C02A_seoyun_tap 0 21"
   "06_S02_C02B_junho_phone 0 16"
   "08_S03_C01a_bus_far 0 16 1.5625 0.22 out"
