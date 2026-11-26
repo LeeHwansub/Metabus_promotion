@@ -243,12 +243,7 @@ function s01b(lt) {
   const zk = eIn(p(lt, 2.1, 3.0));
   const tf = place(IMG.s01b, { scale: 1.05 + .05 * p(lt, 0, 2.1) + 1.8 * zk, fx: V && lt < 1.95 ? .665 : lerp(.47, .515, zk), fy: lerp(.5, .6, zk) });   // v4: 9:16 정류장 와이드는 오른쪽 준호 기준
   draw(IMG.s01b, tf, REAL); vignette(.4 * (1 - zk));
-  const [px, py] = pt(tf, .515, .6); const k = eOut(p(lt, 1.4, 1.9));
-  if (k > 0) {   // 폰 화면 속 작은 ▶ (복선)
-    glow(px, py, 60 * K * (1 + 3 * zk), '255,226,160', .55 * k);
-    const r = 9 * K * (1 + 3.5 * zk); ctx.save(); ctx.globalAlpha = k; ctx.fillStyle = '#fff'; ctx.beginPath();
-    ctx.moveTo(px - r * .45, py - r * .6); ctx.lineTo(px + r * .65, py); ctx.lineTo(px - r * .45, py + r * .6); ctx.closePath(); ctx.fill(); ctx.restore();
-  }
+  // v5: 폰 속 작은 ▶(복선) 삭제 — 정지 이미지 좌표라 영상 컷에서 허공 · 손목에 떠 있었음. 복선은 다음 컷 초대 화면이 맡음
   fill('#FFF6E4', eIn(p(lt, 2.75, 3.0)));
 }
 // S02_C01 초대 카드 6–7.5
@@ -312,7 +307,7 @@ function s03b(lt) {
 }
 // S04_C01 준호의 산사 (빛이 걷힘) 13–15
 function s04a(lt) {
-  const tf = place(IMG.s04a, { scale: 1.02 + .06 * eIO(lt / 2), fx: V ? .44 : .6, fy: .5 });   // v5: 9:16은 준호(가로 44%) 중앙 draw(IMG.s04a, tf);
+  const tf = place(IMG.s04a, { scale: 1.02 + .06 * eIO(lt / 2), fx: V ? .44 : .6, fy: .5 }); draw(IMG.s04a, tf);   // v5: 9:16은 준호(가로 44%) 중앙
   fill('#FFF6E4', 1 - eOut(p(lt, 0, .7)));
 }
 // S04_C02 시선 틸트 (염주 손 → 하늘 → 슬로프 꼭대기 서윤) 15–17
