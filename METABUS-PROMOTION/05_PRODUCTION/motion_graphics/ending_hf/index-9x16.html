@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>metaBus ending (HyperFrames)</title>
+<!--
+  metaBus 엔딩 4초 — HyperFrames 컴포지션 형식 (GSAP 타임라인 1개, window.__timelines["ending"]).
+  영상 26.0초(사운드트랙의 엔딩 슬램)에 이어 붙는다: 0.00 PLAY 슬램 → 0.55 YOUR WORLD → 1.45 PLAY가 접혀 티켓 마크로 플립
+  → 1.85 워드마크 와이프 → 2.35 metabus.app → 4.00까지 홀드.
+  9:16은 build_9x16.sh 가 이 파일에서 루트 크기와 is-v 클래스만 바꿔 index-9x16.html 을 만든다.
+  우리 렌더러(render.mjs)용으로 window.renderAt(t) = tl.seek(t) 를 덧붙였다(HyperFrames 런타임에는 영향 없음).
+-->
+<style>
+  @font-face { font-family: "Archivo Black"; src: url("assets/fonts/ArchivoBlack-Regular.ttf") format("truetype"); font-display: block; }
+  @font-face { font-family: "Nunito"; src: url("assets/fonts/Nunito-Variable.ttf") format("truetype"); font-weight: 200 1000; font-display: block; }
+  html, body { margin: 0; background: #05061A; overflow: hidden; }
+  #root { position: relative; overflow: hidden; background: #05061A; --navy: #0C0C6C; --yellow: #FCC024; --lav: #A48BFF;
+          --play: 380px; --your: 104px; --mark: 118px; --word: 128px; --url: 40px; --shift: 326px; }
+  #root.is-v { --play: 280px; --your: 78px; --mark: 104px; --word: 112px; --url: 38px; --shift: 286px; }
+  #root > * { position: absolute; }
+  #bg, #tint, #glow, #fx, #cam, #grain, #flash, #fadeout { inset: 0; }   /* 전체 화면 레이어만 (inset을 공통 규칙에 두면 .url · .ring 위치가 덮임) */
+  .bg { background: url("assets/stadium_blur.jpg") center / cover no-repeat; transform-origin: 50% 50%; }
+  #root.is-v .bg { background-image: url("assets/stadium_blur_9x16.jpg"); }
+  .tint { background: radial-gradient(ellipse 70% 60% at 50% 48%, rgba(18,18,110,.78) 0%, rgba(12,12,108,.9) 55%, rgba(5,6,26,.98) 100%); }
+  .glow { background: radial-gradient(circle at 50% 50%, rgba(252,192,36,.38) 0%, rgba(144,108,252,.18) 26%, transparent 52%); mix-blend-mode: screen; }
+  .streak { left: -40%; width: 180%; height: 3px; top: 50%; background: linear-gradient(90deg, transparent, rgba(200,190,255,.0) 20%, rgba(220,212,255,.85) 50%, rgba(200,190,255,0) 80%, transparent); filter: blur(1px); mix-blend-mode: screen; }
+  .streak.s2 { height: 1px; top: 46%; }
+  canvas.fx { width: 100%; height: 100%; }
+  .cam { display: grid; place-items: center; }
+  .stack { position: relative; display: grid; place-items: center; }
+  .play { font: 400 var(--play)/0.86 "Archivo Black", sans-serif; letter-spacing: .01em; color: var(--yellow); white-space: nowrap;
+          text-shadow: 0 0 60px rgba(252,192,36,.35), 0 18px 50px rgba(0,0,40,.55); }
+  .play .L { display: inline-block; transform-origin: 50% 80%; }
+  .your { position: absolute; top: calc(50% + var(--play) * .34); left: 50%; transform: translateX(-50%); overflow: hidden; padding: 0 .1em; white-space: nowrap;
+          font: 400 var(--your)/1 "Archivo Black", sans-serif; letter-spacing: .06em; color: #FFFFFF; }
+  .your .W { display: inline-block; }
+  .ring { left: 50%; top: 50%; width: 560px; height: 560px; margin: -280px 0 0 -280px; border-radius: 50%;
+          border: 5px solid rgba(252,192,36,.9); box-shadow: 0 0 40px rgba(252,192,36,.6), inset 0 0 40px rgba(252,192,36,.35); }
+  .lockup { display: flex; align-items: center; gap: calc(var(--mark) * .23); }
+  .markwrap { perspective: 900px; }
+  .mark { display: block; height: var(--mark); width: calc(var(--mark) * 64 / 44); overflow: visible; filter: drop-shadow(0 10px 24px rgba(0,0,30,.55)) drop-shadow(0 0 22px rgba(252,192,36,.35)); }
+  .word { font: 900 var(--word)/1 "Nunito", sans-serif; letter-spacing: -.01em; padding: .06em .05em .12em 0;
+          background: linear-gradient(100deg, #FFFFFF 0%, #E8E2FF 38%, #B8A6FF 72%, #9C86FF 100%); -webkit-background-clip: text; background-clip: text; color: transparent;
+          filter: drop-shadow(0 8px 24px rgba(0,0,30,.5)); }
+  .url { left: 0; right: 0; top: calc(50% + var(--mark) * .95); text-align: center;
+         font: 700 var(--url)/1 "Nunito", sans-serif; letter-spacing: .22em; color: #EDEAFF; }
+  .url b { color: var(--yellow); font-weight: 800; }
+  .grain { opacity: .07; mix-blend-mode: overlay; }
+  .fadeout { background: #05061A; }
+</style>
+</head>
+<body>
+<div id="root" class="is-v" data-composition-id="ending" data-width="1080" data-height="1920" data-start="0" data-duration="4" data-fps="24" style="width:1080px;height:1920px">
+  <div id="bg" class="bg clip" data-start="0" data-duration="4" data-track-index="0"></div>
+  <div id="tint" class="tint clip" data-start="0" data-duration="4" data-track-index="1"></div>
+  <div id="glow" class="glow clip" data-start="0" data-duration="4" data-track-index="2"></div>
+  <canvas id="fx" class="fx clip" data-start="0" data-duration="4" data-track-index="3" width="1080" height="1920"></canvas>
+  <div id="streak1" class="streak clip" data-start="0" data-duration="1" data-track-index="4"></div>
+  <div id="streak2" class="streak s2 clip" data-start="0" data-duration="1" data-track-index="5"></div>
+  <div id="ring" class="ring clip" data-start="0" data-duration="1.2" data-track-index="6"></div>
+  <div id="cam" class="cam clip" data-start="0" data-duration="4" data-track-index="7">
+    <div class="stack">
+      <div id="play" class="play"><span class="L">P</span><span class="L">L</span><span class="L">A</span><span class="L">Y</span></div>
+      <div id="your" class="your"><span class="W">YOUR</span>&nbsp;<span class="W">WORLD</span></div>
+      <div id="lockup" class="lockup" style="position:absolute">
+        <div class="markwrap">
+          <svg id="mark" class="mark" viewBox="4 8 64 44" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <clipPath id="tk"><path d="M11,8 H61 A7,7 0 0 1 68,15 V23.0 A7,7 0 0 0 68,37.0 V45 A7,7 0 0 1 61,52 H11 A7,7 0 0 1 4,45 V37.0 A7,7 0 0 0 4,23.0 V15 A7,7 0 0 1 11,8 Z"/></clipPath>
+              <linearGradient id="tkfill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFD15A"/><stop offset="1" stop-color="#F5AB3D"/></linearGradient>
+              <linearGradient id="gl" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".5" stop-color="#fff" stop-opacity=".85"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>
+            </defs>
+            <g clip-path="url(#tk)">
+              <rect x="0" y="0" width="80" height="60" fill="url(#tkfill)"/>
+              <path fill="#10121D" d="M18.366 40.0H21.824V31.966C21.824 30.12 21.512 27.468 21.33 25.648H21.434L22.968 30.172L25.958 38.258H28.168L31.132 30.172L32.692 25.648H32.822C32.614 27.468 32.328 30.12 32.328 31.966V40.0H35.838V20.734H31.574L28.35 29.782C27.96 30.952 27.622 32.226 27.206 33.448H27.076C26.686 32.226 26.322 30.952 25.906 29.782L22.63 20.734H18.366Z"/>
+              <rect x="51" y="15" width="3.2" height="3.6" fill="#10121D"/><rect x="51" y="21.4" width="3.2" height="3.6" fill="#10121D"/>
+              <rect x="51" y="27.8" width="3.2" height="3.6" fill="#10121D"/><rect x="51" y="34.2" width="3.2" height="3.6" fill="#10121D"/>
+              <rect x="51" y="40.6" width="3.2" height="3.6" fill="#10121D"/>
+              <rect id="glint" x="-30" y="-10" width="16" height="80" fill="url(#gl)" transform="skewX(-20)"/>
+            </g>
+          </svg>
+        </div>
+        <div id="word" class="word">metaBus</div>
+      </div>
+    </div>
+  </div>
+  <div id="url" class="url clip" data-start="0" data-duration="4" data-track-index="8"><b>▶</b>&nbsp; metabus.app</div>
+  <svg id="grain" class="grain clip" data-start="0" data-duration="4" data-track-index="9" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+    <filter id="n"><feTurbulence type="fractalNoise" baseFrequency=".9" numOctaves="2" seed="7" stitchTiles="stitch"/><feColorMatrix type="saturate" values="0"/></filter>
+    <rect width="100%" height="100%" filter="url(#n)"/>
+  </svg>
+  <div id="flash" class="clip" data-start="0" data-duration="0.6" data-track-index="10" style="background:#FFF6E0"></div>
+  <div id="fadeout" class="fadeout clip" data-start="3.4" data-duration="0.6" data-track-index="11"></div>
+</div>
+
+<script src="assets/gsap.min.js"></script>
+<script>
+(() => {
+  const root = document.getElementById('root');
+  const V = root.classList.contains('is-v');
+  const W = +root.dataset.width, H = +root.dataset.height;
+  const q = s => root.querySelector(s);
+  const tl = gsap.timeline({ paused: true });
+
+  // ---- 시드 고정 난수 (계약 4: 무작위는 시드로)
+  let seed = 11; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  const P = Array.from({ length: 90 }, () => ({ x: rnd(), y: rnd(), r: .6 + rnd() * 2.2, v: .02 + rnd() * .05, ph: rnd() * 6.28, c: rnd() < .3 ? '252,192,36' : '190,175,255' }));
+  const fx = q('#fx'); fx.width = W; fx.height = H; const g = fx.getContext('2d');
+  const drawFx = () => {                                     // 입자: 타임라인 시간만으로 정해짐
+    const t = tl.time(); g.clearRect(0, 0, W, H);
+    for (const p of P) {
+      const ang = p.ph + t * .4;
+      const x = (p.x + Math.sin(ang) * .01) * W, y = ((p.y - t * p.v + 1) % 1) * H;
+      const a = (.25 + .35 * Math.sin(ang * 2) ** 2) * (t < .15 ? t / .15 : 1);
+      g.fillStyle = `rgba(${p.c},${a})`; g.beginPath(); g.arc(x, y, p.r * (V ? 1.2 : 1), 0, 6.283); g.fill();
+    }
+  };
+  tl.eventCallback('onUpdate', drawFx);
+
+  // ---- 초기 상태
+  gsap.set('#play .L', { opacity: 0, scale: 1.7, yPercent: -6 });
+  gsap.set('#your .W', { yPercent: 115 });
+  gsap.set('#mark', { rotationY: 92, scale: .55, opacity: 0, transformOrigin: '50% 50%' });
+  gsap.set('.markwrap', { x: 'var(--shift)' });
+  gsap.set('#word', { clipPath: 'inset(0% 100% 0% 0%)', x: -24 });
+  gsap.set('#url', { opacity: 0, y: 18, letterSpacing: '.5em' });
+  gsap.set('#ring', { scale: .15, opacity: 0 });
+  gsap.set('#streak1', { xPercent: -30, opacity: 0, rotation: -8 });
+  gsap.set('#streak2', { xPercent: 30, opacity: 0, rotation: -8 });
+  gsap.set('#glow', { opacity: .9, scale: 1.1 });
+  gsap.set('#tint', { opacity: .62 });
+  gsap.set('#bg', { scale: 1.18 });
+  gsap.set('#fadeout', { opacity: 0 });
+  gsap.set('#glint', { attr: { x: -30 } });
+
+  // ---- 0.00 PLAY 슬램 + 빛 번쩍 + 카메라 흔들림
+  tl.fromTo('#flash', { opacity: .95 }, { opacity: 0, duration: .28, ease: 'power2.out' }, 0);
+  tl.to('#play .L', { opacity: 1, scale: 1, yPercent: 0, duration: .32, ease: 'expo.out', stagger: .035 }, 0);
+  tl.to('#bg', { scale: 1.26, duration: 4, ease: 'none' }, 0);
+  tl.to('#tint', { opacity: .9, duration: 1.2, ease: 'power2.inOut' }, .1);
+  tl.to('#cam', { keyframes: [{ x: 14, y: -8, duration: .04 }, { x: -11, y: 7, duration: .05 }, { x: 7, y: -4, duration: .06 }, { x: -4, y: 2, duration: .07 }, { x: 0, y: 0, duration: .1 }], ease: 'none' }, .02);
+  tl.fromTo('#ring', { scale: .15, opacity: .95 }, { scale: 2.7, opacity: 0, duration: .75, ease: 'power3.out' }, .14);
+  tl.to('#streak1', { xPercent: 25, opacity: .9, duration: .35, ease: 'power2.out' }, 0).to('#streak1', { opacity: 0, duration: .35 }, .35);
+  tl.to('#streak2', { xPercent: -20, opacity: .7, duration: .4, ease: 'power2.out' }, .04).to('#streak2', { opacity: 0, duration: .35 }, .4);
+  tl.to('#glow', { opacity: .55, scale: 1, duration: .9, ease: 'power2.out' }, .1);
+
+  // ---- 0.55 PLAY 위로 · YOUR WORLD 마스크에서 올라옴
+  tl.to('#play', { scale: .64, yPercent: V ? -34 : -30, duration: .55, ease: 'expo.inOut' }, .55);
+  tl.to('#your', { y: V ? -64 : -54, duration: .55, ease: 'expo.inOut' }, .55);
+  tl.to('#your .W', { yPercent: 0, duration: .5, ease: 'expo.out', stagger: .07 }, .72);
+
+  // ---- 1.40 PLAY가 한 점으로 접히며 티켓 마크로 (3D 플립)
+  tl.to('#your', { opacity: 0, y: '+=30', duration: .32, ease: 'power2.in' }, 1.36);
+  tl.to('#play .L', { scaleX: 0, opacity: 0, duration: .3, ease: 'power3.in', stagger: { each: .025, from: 'edges' } }, 1.38);
+  tl.to('#play', { yPercent: 0, duration: .3, ease: 'power3.in' }, 1.38);
+  tl.to('#mark', { rotationY: 0, scale: 1, opacity: 1, duration: .55, ease: 'back.out(1.7)' }, 1.52);
+  tl.to('#glow', { opacity: .8, scale: .8, duration: .4, ease: 'power2.out' }, 1.52);
+
+  // ---- 1.85 글린트 + 마크가 왼쪽으로, 워드마크 와이프
+  tl.to('#glint', { attr: { x: 92 }, duration: .55, ease: 'power2.inOut' }, 1.82);
+  tl.to('.markwrap', { x: 0, duration: .55, ease: 'expo.inOut' }, 1.88);
+  tl.to('#word', { clipPath: 'inset(0% 0% 0% 0%)', x: 0, duration: .6, ease: 'expo.out' }, 2.02);
+  tl.to('#glow', { opacity: .45, scale: 1.25, duration: 1.2, ease: 'power1.out' }, 2.0);
+
+  // ---- 2.35 URL · 홀드(느린 푸시인) · 끝 0.4초 페이드
+  tl.to('#url', { opacity: 1, y: 0, letterSpacing: '.22em', duration: .6, ease: 'expo.out' }, 2.38);
+  tl.to('#cam', { scale: 1.035, duration: 1.6, ease: 'none' }, 2.4);
+  tl.to('#fadeout', { opacity: 1, duration: .4, ease: 'power1.in' }, 3.6);
+  tl.set({}, {}, 4);
+
+  window.__timelines = window.__timelines || {};
+  window.__timelines['ending'] = tl;
+
+  // ---- 우리 렌더러(render.mjs) 호환: renderAt(t) = 타임라인 탐색
+  window.renderAt = async (t) => { tl.seek(Math.min(t, 3.999), false); drawFx(); };
+  document.fonts.ready.then(() => { tl.seek(0, false); drawFx(); window.ASSETS = { aspect: V ? '9x16' : '16x9', fonts: document.fonts.check('400 80px "Archivo Black"') && document.fonts.check('900 80px Nunito') }; window.READY = true; });
+})();
+</script>
+</body>
+</html>

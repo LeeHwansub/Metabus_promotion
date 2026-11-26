@@ -1,0 +1,615 @@
+{
+ "summary": "QA OK: every check passed. Master gain over the stems +0.4 dB (levels below are at master scale).",
+ "status": "ok",
+ "note": null,
+ "sections": {
+  "clicks": {
+   "status": "ok",
+   "summary": "0 click(s) in the master, 0 in the stems; 0 at a placement edge (a cut: fix the trim / fade) (designed attacks: master 0, sfx 1, amb 0, music 0)",
+   "counts": {
+    "master": {
+     "clicks": 0,
+     "attacks": 0
+    },
+    "sfx": {
+     "clicks": 0,
+     "attacks": 1
+    },
+    "amb": {
+     "clicks": 0,
+     "attacks": 0
+    },
+    "music": {
+     "clicks": 0,
+     "attacks": 0
+    }
+   },
+   "items": []
+  },
+  "loudness": {
+   "lufs": -14.03,
+   "target": -14,
+   "true_peak_dbtp": -2.27,
+   "lra_lu": 5.3,
+   "premaster_lufs": -14.44,
+   "loudest_momentary": -10.8,
+   "loudest_at": 24.2,
+   "loudest_frac": 0.81,
+   "short_term_per_s": [
+    -19.0,
+    -17.9,
+    -18.2,
+    -16.7,
+    -15.7,
+    -14.6,
+    -14.0,
+    -14.1,
+    -14.2,
+    -14.6,
+    -14.3,
+    -14.7,
+    -15.1,
+    -15.6,
+    -15.5,
+    -14.8,
+    -13.9,
+    -13.1,
+    -12.8,
+    -12.7,
+    -12.8,
+    -12.7,
+    -12.2,
+    -11.9,
+    -11.7,
+    -11.9,
+    -12.3,
+    -14.4
+   ],
+   "head_5ms_peak_dbfs": -68.7,
+   "tail_50ms_rms_dbfs": -108.9,
+   "tail_10ms_peak_dbfs": -240.0,
+   "acts": {
+    "real": {
+     "from": 0.0,
+     "momentary_median": -16.9,
+     "momentary_max": -11.7
+    },
+    "shuttle": {
+     "from": 9.0,
+     "momentary_median": -14.7,
+     "momentary_max": -13.2
+    },
+    "change": {
+     "from": 13.0,
+     "momentary_median": -15.5,
+     "momentary_max": -13.8
+    },
+    "play": {
+     "from": 17.0,
+     "momentary_median": -12.7,
+     "momentary_max": -10.8
+    },
+    "ending": {
+     "from": 26.0,
+     "momentary_median": -12.4,
+     "momentary_max": -11.2
+    }
+   },
+   "status": "ok",
+   "summary": "-14.0 LUFS (target -14), true peak -2.3 dBTP, LRA 5.3 LU, loudest momentary -10.8 LUFS at 0:24.20 (81% of the runtime)"
+  },
+  "coverage": {
+   "status": "ok",
+   "partial": [],
+   "unsounded_classes": [],
+   "placed_but_silent": [],
+   "summary": "0 of 6 cue events have no sound; 0 class(es) of action sounded only in part"
+  },
+  "edges": {
+   "status": "ok",
+   "summary": "0 defect(s) (abrupt entries, chopped decays, chopped music), 2 with craft notes only (used samples, slices, music splices); 0 placement(s) run past the film ends",
+   "items": [
+    {
+     "what": "sample",
+     "name": "noti",
+     "file": "mk-2356_dry-pop-up-notification.wav",
+     "start": 0,
+     "end": null,
+     "head_db": -86.4,
+     "tail_db": -87.5,
+     "pre20_db": -240.0,
+     "post20_db": -240.0,
+     "attack_ms": 34.0,
+     "late_onset": 0.19,
+     "fade_in": 0.002,
+     "fade_out": 0.012,
+     "issues": [],
+     "notes": [
+      "a second hit inside the sample at 0.19 s (fine for a rattle, wrong for a single hit)"
+     ]
+    }
+   ],
+   "splices": [
+    {
+     "segment": "src 0-4 \uc778\ud2b8\ub85c(\uc870\uc6a9\u2192\uc0c1\uc2b9) \u2192 film -1~9 \ud604\uc2e4 \u00b7 PLAY \ud3ed\ubc1c",
+     "film_end": 9.0,
+     "out_db": -24.2,
+     "cut_off_db": -8.8,
+     "next_in_db": -9.5,
+     "issues": [],
+     "notes": [
+      "begins inside a sustained sound (the source before 1.9299 s is as loud): no fresh attack on the splice"
+     ]
+    }
+   ],
+   "cut_by_film_ends": []
+  },
+  "audibility": {
+   "status": "ok",
+   "counts": {
+    "clear": 6
+   },
+   "summary": "6 events: clear 6, ok 0, barely 0, masked 0; 0 layer(s) in multi-layer events add nothing measurable (read < 0 dB)",
+   "items": [
+    {
+     "t": 6.04,
+     "label": "s02:phone:notify",
+     "kind": "pop",
+     "n_layers": 1,
+     "rules": [
+      "phone notify"
+     ],
+     "peak_db": -14.6,
+     "vs_bed_db": 4.2,
+     "vs_bed_hz": 631,
+     "vs_all_db": 4.2,
+     "first20_db": 8.4,
+     "first20_hz": 631,
+     "read_db": 8.4,
+     "verdict": "clear",
+     "covered_by": "other effects",
+     "qa_ok": "\uc758\ub3c4: \uc54c\ub9bc \ud31d\uc740 \uc2dc\uc791 \ud6c4 \uc57d 0.1\ucd08\uc5d0 \ucd5c\ub300\uc74c \u2192 \uc2dc\uc791\uc744 60ms \uc55e\ub2f9\uaca8 \ucd5c\ub300\uc74c\uc774 \ud654\uba74 +40ms(\u00b145 \uc548)"
+    },
+    {
+     "t": 25.92,
+     "label": "s06:play:slam",
+     "kind": "hit",
+     "n_layers": 1,
+     "rules": [
+      "ending slam"
+     ],
+     "peak_db": -7.6,
+     "vs_bed_db": -2.0,
+     "vs_bed_hz": 126,
+     "vs_all_db": -2.0,
+     "first20_db": 9.8,
+     "first20_hz": 100,
+     "read_db": 9.8,
+     "verdict": "clear",
+     "covered_by": "music/amb",
+     "qa_ok": "\uc758\ub3c4: earshot \uce21\uc815 \uae30\uc900 \ud788\ud2b8\ub294 \ud654\uba74 \uc804\ud658 80ms \uc804\uc5d0 \uc2dc\uc791(offset -0.08)"
+    },
+    {
+     "t": 18.191,
+     "label": "s05:ski:snow",
+     "kind": "whoosh",
+     "n_layers": 1,
+     "rules": [
+      "ski snow"
+     ],
+     "peak_db": -9.4,
+     "vs_bed_db": 10.2,
+     "vs_bed_hz": 2512,
+     "vs_all_db": 10.2,
+     "first20_db": 6.3,
+     "first20_hz": 2512,
+     "read_db": 10.2,
+     "verdict": "clear",
+     "covered_by": "other effects"
+    },
+    {
+     "t": 11.718,
+     "label": "s03:door:light",
+     "kind": "riser",
+     "n_layers": 1,
+     "rules": [
+      "door light"
+     ],
+     "peak_db": -9.6,
+     "vs_bed_db": 11.9,
+     "vs_bed_hz": 100,
+     "vs_all_db": 11.9,
+     "first20_db": 9.4,
+     "first20_hz": 1000,
+     "read_db": 11.9,
+     "verdict": "clear",
+     "covered_by": "other effects"
+    },
+    {
+     "t": 22.662,
+     "label": "s05:race:passby",
+     "kind": "pass",
+     "n_layers": 1,
+     "rules": [
+      "race pass"
+     ],
+     "peak_db": -8.1,
+     "vs_bed_db": 11.6,
+     "vs_bed_hz": 1000,
+     "vs_all_db": 11.6,
+     "first20_db": 12.2,
+     "first20_hz": 1259,
+     "read_db": 12.2,
+     "verdict": "clear",
+     "covered_by": "other effects"
+    },
+    {
+     "t": 8.42,
+     "label": "s02:play:burst",
+     "kind": "hit",
+     "n_layers": 1,
+     "rules": [
+      "play burst"
+     ],
+     "peak_db": -8.6,
+     "vs_bed_db": 15.4,
+     "vs_bed_hz": 631,
+     "vs_all_db": 15.4,
+     "first20_db": 4.4,
+     "first20_hz": 200,
+     "read_db": 15.4,
+     "verdict": "clear",
+     "covered_by": "other effects",
+     "qa_ok": "\uc758\ub3c4: earshot \uce21\uc815 \uae30\uc900 \ud788\ud2b8\ub294 \ud654\uba74 \uc804\ud658 80ms \uc804\uc5d0 \uc2dc\uc791(offset -0.08)"
+    }
+   ],
+   "events": [
+    {
+     "t": 6.04,
+     "label": "s02:phone:notify",
+     "kind": "pop",
+     "n_layers": 1,
+     "rules": [
+      "phone notify"
+     ],
+     "peak_db": -14.6,
+     "vs_bed_db": 4.2,
+     "vs_bed_hz": 631,
+     "vs_all_db": 4.2,
+     "first20_db": 8.4,
+     "first20_hz": 631,
+     "read_db": 8.4,
+     "verdict": "clear",
+     "covered_by": "other effects",
+     "qa_ok": "\uc758\ub3c4: \uc54c\ub9bc \ud31d\uc740 \uc2dc\uc791 \ud6c4 \uc57d 0.1\ucd08\uc5d0 \ucd5c\ub300\uc74c \u2192 \uc2dc\uc791\uc744 60ms \uc55e\ub2f9\uaca8 \ucd5c\ub300\uc74c\uc774 \ud654\uba74 +40ms(\u00b145 \uc548)"
+    },
+    {
+     "t": 8.42,
+     "label": "s02:play:burst",
+     "kind": "hit",
+     "n_layers": 1,
+     "rules": [
+      "play burst"
+     ],
+     "peak_db": -8.6,
+     "vs_bed_db": 15.4,
+     "vs_bed_hz": 631,
+     "vs_all_db": 15.4,
+     "first20_db": 4.4,
+     "first20_hz": 200,
+     "read_db": 15.4,
+     "verdict": "clear",
+     "covered_by": "other effects",
+     "qa_ok": "\uc758\ub3c4: earshot \uce21\uc815 \uae30\uc900 \ud788\ud2b8\ub294 \ud654\uba74 \uc804\ud658 80ms \uc804\uc5d0 \uc2dc\uc791(offset -0.08)"
+    },
+    {
+     "t": 11.718,
+     "label": "s03:door:light",
+     "kind": "riser",
+     "n_layers": 1,
+     "rules": [
+      "door light"
+     ],
+     "peak_db": -9.6,
+     "vs_bed_db": 11.9,
+     "vs_bed_hz": 100,
+     "vs_all_db": 11.9,
+     "first20_db": 9.4,
+     "first20_hz": 1000,
+     "read_db": 11.9,
+     "verdict": "clear",
+     "covered_by": "other effects"
+    },
+    {
+     "t": 18.191,
+     "label": "s05:ski:snow",
+     "kind": "whoosh",
+     "n_layers": 1,
+     "rules": [
+      "ski snow"
+     ],
+     "peak_db": -9.4,
+     "vs_bed_db": 10.2,
+     "vs_bed_hz": 2512,
+     "vs_all_db": 10.2,
+     "first20_db": 6.3,
+     "first20_hz": 2512,
+     "read_db": 10.2,
+     "verdict": "clear",
+     "covered_by": "other effects"
+    },
+    {
+     "t": 22.662,
+     "label": "s05:race:passby",
+     "kind": "pass",
+     "n_layers": 1,
+     "rules": [
+      "race pass"
+     ],
+     "peak_db": -8.1,
+     "vs_bed_db": 11.6,
+     "vs_bed_hz": 1000,
+     "vs_all_db": 11.6,
+     "first20_db": 12.2,
+     "first20_hz": 1259,
+     "read_db": 12.2,
+     "verdict": "clear",
+     "covered_by": "other effects"
+    },
+    {
+     "t": 25.92,
+     "label": "s06:play:slam",
+     "kind": "hit",
+     "n_layers": 1,
+     "rules": [
+      "ending slam"
+     ],
+     "peak_db": -7.6,
+     "vs_bed_db": -2.0,
+     "vs_bed_hz": 126,
+     "vs_all_db": -2.0,
+     "first20_db": 9.8,
+     "first20_hz": 100,
+     "read_db": 9.8,
+     "verdict": "clear",
+     "covered_by": "music/amb",
+     "qa_ok": "\uc758\ub3c4: earshot \uce21\uc815 \uae30\uc900 \ud788\ud2b8\ub294 \ud654\uba74 \uc804\ud658 80ms \uc804\uc5d0 \uc2dc\uc791(offset -0.08)"
+    }
+   ],
+   "dead_layers": []
+  },
+  "harshness": {
+   "status": "ok",
+   "music_max_db": -15.0,
+   "summary": "0 event(s) more than 6 dB over the music's loudest 2-6 kHz peak (-15.0 dBFS); note: 0 bright event(s) (centroid > 6.5 kHz, above launch-film effects)",
+   "items": [
+    {
+     "t": 18.191,
+     "label": "s05:ski:snow",
+     "rules": [
+      "ski snow"
+     ],
+     "pres_db": -23.7,
+     "pres_minus_low_db": 19.5,
+     "centroid_hz": 3134,
+     "music_pres_db": -28.2,
+     "over_music_max_db": -8.7,
+     "issues": [],
+     "bright": false
+    },
+    {
+     "t": 22.662,
+     "label": "s05:race:passby",
+     "rules": [
+      "race pass"
+     ],
+     "pres_db": -29.7,
+     "pres_minus_low_db": -1.2,
+     "centroid_hz": 1034,
+     "music_pres_db": -29.3,
+     "over_music_max_db": -14.6,
+     "issues": [],
+     "bright": false
+    },
+    {
+     "t": 11.718,
+     "label": "s03:door:light",
+     "rules": [
+      "door light"
+     ],
+     "pres_db": -30.5,
+     "pres_minus_low_db": -4.8,
+     "centroid_hz": 956,
+     "music_pres_db": -27.8,
+     "over_music_max_db": -15.5,
+     "issues": [],
+     "bright": false
+    },
+    {
+     "t": 6.04,
+     "label": "s02:phone:notify",
+     "rules": [
+      "phone notify"
+     ],
+     "pres_db": -32.8,
+     "pres_minus_low_db": -2.5,
+     "centroid_hz": 765,
+     "music_pres_db": -26.8,
+     "over_music_max_db": -17.8,
+     "issues": [],
+     "bright": false
+    },
+    {
+     "t": 25.92,
+     "label": "s06:play:slam",
+     "rules": [
+      "ending slam"
+     ],
+     "pres_db": -48.2,
+     "pres_minus_low_db": -5.2,
+     "centroid_hz": 143,
+     "music_pres_db": -24.3,
+     "over_music_max_db": -33.2,
+     "issues": [],
+     "bright": false
+    },
+    {
+     "t": 8.42,
+     "label": "s02:play:burst",
+     "rules": [
+      "play burst"
+     ],
+     "pres_db": -93.7,
+     "pres_minus_low_db": -59.7,
+     "centroid_hz": 65,
+     "music_pres_db": -25.6,
+     "over_music_max_db": -78.6,
+     "issues": [],
+     "bright": false
+    }
+   ],
+   "bright": []
+  },
+  "sync": {
+   "status": "ok",
+   "checked": 6,
+   "items": [],
+   "deliberate": [
+    {
+     "t_cue": 6.1,
+     "label": "s02:phone:notify",
+     "kind": "pop",
+     "test": "impact",
+     "align": "attack",
+     "attack_ms": -60,
+     "peak_ms": 38,
+     "apex_ms": -34,
+     "long": false,
+     "issue": "attack -60 ms (sound before picture)",
+     "qa_ok": "\uc758\ub3c4: \uc54c\ub9bc \ud31d\uc740 \uc2dc\uc791 \ud6c4 \uc57d 0.1\ucd08\uc5d0 \ucd5c\ub300\uc74c \u2192 \uc2dc\uc791\uc744 60ms \uc55e\ub2f9\uaca8 \ucd5c\ub300\uc74c\uc774 \ud654\uba74 +40ms(\u00b145 \uc548)"
+    },
+    {
+     "t_cue": 8.5,
+     "label": "s02:play:burst",
+     "kind": "hit",
+     "test": "impact",
+     "align": "attack",
+     "attack_ms": -80,
+     "peak_ms": 201,
+     "apex_ms": 298,
+     "long": false,
+     "issue": "attack -80 ms (sound before picture)",
+     "qa_ok": "\uc758\ub3c4: earshot \uce21\uc815 \uae30\uc900 \ud788\ud2b8\ub294 \ud654\uba74 \uc804\ud658 80ms \uc804\uc5d0 \uc2dc\uc791(offset -0.08)"
+    },
+    {
+     "t_cue": 26.0,
+     "label": "s06:play:slam",
+     "kind": "hit",
+     "test": "impact",
+     "align": "attack",
+     "attack_ms": -80,
+     "peak_ms": 777,
+     "apex_ms": 862,
+     "long": false,
+     "issue": "attack -80 ms (sound before picture)",
+     "qa_ok": "\uc758\ub3c4: earshot \uce21\uc815 \uae30\uc900 \ud788\ud2b8\ub294 \ud654\uba74 \uc804\ud658 80ms \uc804\uc5d0 \uc2dc\uc791(offset -0.08)"
+    }
+   ],
+   "summary": "6 events checked, 0 off their cue; 3 more sit off the cue by exactly a rule offset or carry a qa_ok note (check those on the frames)"
+  },
+  "density": {
+   "status": "ok",
+   "events_per_s": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1,
+    0,
+    1,
+    0,
+    0,
+    1,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1,
+    0,
+    0,
+    0,
+    1,
+    0,
+    0,
+    1,
+    0,
+    0,
+    0,
+    0
+   ],
+   "busiest_s": [
+    [
+     6,
+     1
+    ],
+    [
+     8,
+     1
+    ],
+    [
+     11,
+     1
+    ],
+    [
+     18,
+     1
+    ],
+    [
+     22,
+     1
+    ]
+   ],
+   "most_used_samples": [
+    [
+     "noti",
+     1
+    ],
+    [
+     "zoom_hit",
+     1
+    ],
+    [
+     "riser",
+     1
+    ],
+    [
+     "snow_whoosh",
+     1
+    ],
+    [
+     "car_pass",
+     1
+    ],
+    [
+     "epic_hit",
+     1
+    ]
+   ],
+   "rules": [],
+   "machine_gun": [],
+   "summary": "6 effect events in 30 s (2.0 per 10 s); busiest seconds 6s:1, 8s:1, 11s:1, 18s:1, 22s:1; 0 machine-gun rule(s)"
+  }
+ },
+ "inputs": {
+  "design": "audio/sounddesign.json",
+  "report": "out/qa/mix_report.json",
+  "trace": "out/qa/adds.json",
+  "stems": "out/audio/stems",
+  "master": "out/audio/soundtrack.wav",
+  "only": null
+ }
+}

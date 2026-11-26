@@ -1,0 +1,13 @@
+{
+ "_doc": "Mixkit 1012 'Take this Higher' (123.99 BPM, D major) → 120 BPM. arrange.py 초안(out/audio-review/music/arrange.json)에서 마지막 구간만 바꿈: 자동안은 27–31초에 브레이크다운이 와서 해결되지 않고 꺼짐 → 트랙 아웃트로(마디 44–46)로 엔딩 PLAY 슬램 후 감쇠.",
+ "music": {
+  "file": "audio/assets/music/mixkit-1012_take-this-higher.mp3",
+  "src_bpm": 123.991, "target_bpm": 120.0, "stretch": "rubberband", "gain_db": 0.0,
+  "segments": [
+   {"label": "src 0-4 인트로(조용→상승) → film -1~9 현실 · PLAY 폭발", "src_from": 1.9299, "src_to": 11.608, "at": -1.0, "fade_in": 0.008, "fade_out": 0.06},
+   {"label": "src 22-26 그루브→브레이크다운→드롭 → film 9~19, 드롭 17초(스키)", "src_from": 44.5137, "src_to": 54.1918, "at": 9.0, "fade_in": 0.008, "fade_out": 0.06},
+   {"label": "src 19-21 메인 그루브 → film 19~25 산사·달·레이싱", "src_from": 38.7068, "src_to": 44.5137, "at": 19.0, "fade_in": 0.008, "fade_out": 0.06},
+   {"label": "src 44-46 아웃트로 → film 25~31 야구장·엔딩, 마지막 화음 감쇠", "src_from": 87.0977, "src_to": 92.9046, "at": 25.0, "fade_in": 0.008, "fade_out": 0.06, "tail_fade": 1.8}
+  ]
+ }
+}

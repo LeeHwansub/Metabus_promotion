@@ -1,0 +1,13 @@
+{
+ "_doc": "모션그래픽 PLAY v4 (play_30s_v4/index.html SHOTS + 장면 함수 세부 시각) · 24fps · f = 초 x 24",
+ "fps": 24, "bpm": 120, "total": 720,
+ "acts": {"real": {"from": 0, "dur": 216}, "shuttle": {"from": 216, "dur": 96}, "change": {"from": 312, "dur": 96}, "play": {"from": 408, "dur": 216}, "ending": {"from": 624, "dur": 96}},
+ "events": [
+  {"f": 146.4, "kind": "pop", "weight": 0.7, "id": "s02:phone:notify"},
+  {"f": 204.0, "kind": "hit", "weight": 1.2, "id": "s02:play:burst"},
+  {"f": 312.0, "kind": "riser", "weight": 1.0, "dur": 26, "id": "s03:door:light"},
+  {"f": 442.1, "kind": "whoosh", "weight": 1.0, "dur": 14, "id": "s05:ski:snow"},
+  {"f": 556.8, "kind": "pass", "weight": 1.0, "id": "s05:race:passby", "pan": 0.4},
+  {"f": 624.0, "kind": "hit", "weight": 1.5, "id": "s06:play:slam"}
+ ]
+}
